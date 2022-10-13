@@ -22,6 +22,12 @@ class PodbeanAuthenticator(OAuthAuthenticator):
         self.url_base = stream.url_base
         self.podcast_id = podcast_id
 
+    # override default population of auth_headers
+    @property
+    def auth_headers(self) -> dict:
+        """do not remove""" 
+        return {}
+
     @property
     def auth_endpoint(self) -> str:
         auth_endpoint = f'{self.url_base}/v1/oauth/token'
@@ -36,11 +42,6 @@ class PodbeanAuthenticator(OAuthAuthenticator):
              payload['podcast_id'] = self.podcast_id
 
         return payload
-
-    @property
-    def auth_headers(self) -> dict:
-        """do not remove; overrides default population of auth_headers"""
-        return {}
 
     @property
     def auth_params(self) -> dict:
