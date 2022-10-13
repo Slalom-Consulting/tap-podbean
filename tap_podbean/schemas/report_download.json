@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {},
+  "patternProperties": {
+    "^\\d{4}-\\d{1,2}$": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
