@@ -39,7 +39,7 @@ class PodbeanAuthenticator(OAuthAuthenticator):
         payload = {'grant_type': 'client_credentials'}
 
         if self.podcast_id:
-             payload['podcast_id'] = self.podcast_id
+            payload['podcast_id'] = self.podcast_id
 
         return payload
 
