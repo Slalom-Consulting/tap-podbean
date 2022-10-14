@@ -4,11 +4,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union, List, Iterable
 from requests import request
 from singer_sdk import typing as th  # JSON schema typing helpers
-import json
 import requests
 import re
 import csv
-import io
 
 from tap_podbean.client import PodbeanStream
 from tap_podbean.paginator import PodbeanPaginator
@@ -44,7 +42,6 @@ class EpisodesStream(PodbeanStream):
     schema_filepath = get_schema_fp('episodes')
 
 
-
 class PodcastsStream(PodbeanStream):
     """Define custom stream."""
     name = 'podcasts'
@@ -57,7 +54,7 @@ class PodcastsStream(PodbeanStream):
     def get_child_context(self, record: dict, context: dict | None) -> dict:
         return {
             'podcast_id': record['id'],
-            'year': 2021
+            'year': 2021 #TODO: fix year config
         }
 
 class _PodbeanReportCsvStream(PodbeanStream):
@@ -66,34 +63,12 @@ class _PodbeanReportCsvStream(PodbeanStream):
     records_jsonpath = '$.download_urls'
     parent_stream_type = PodcastsStream
 
-    #@property
-    #def schema(self) -> dict:
-    #    if not self._schema:
-    #        fp = get_schema_fp('report_download')
-    #        with open(fp, 'r') as f:
-    #            self._schema:dict = json.load(f)
-#
-    #    return self._schema
-
-
     def post_process(self, row: dict, context: dict | None = None) -> dict | None:
         """Clean up response and update schema
         
         Returns
             Dict of response records excluding empty records
         """
-        #def pattern_match(val) -> bool:
-        #    pattern_properties:dict = self._schema.get('patternProperties')
-        #    
-        #    for pattern in pattern_properties:
-        #        schema = pattern_properties[pattern]
-#
-        #        if re.match(pattern, val):
-        #            self._schema['properties'][val] = schema
-        #            return True
-#
-        #def remove_empty(val) -> list:
-        #    return [v for v in val if v]
 
         pattern = r'^\d{4}-\d{1,2}$'
         download_urls = [v for k,v in row.items() if re.match(pattern, k) and v]
@@ -113,15 +88,6 @@ class _PodbeanReportCsvStream(PodbeanStream):
         }
 
         return out
-
-
-    #def get_child_context(self, record: dict, context: dict | None) -> dict:
-    #    period = list(record.items())[0]
-    #    return {
-    #        'download_url': record[period][0],
-    #       #TODO: test if podcast_id is still in context
-    #    }
-
 
 class PodcastDownloadReportsStream(_PodbeanReportCsvStream):
     """Define custom stream."""
