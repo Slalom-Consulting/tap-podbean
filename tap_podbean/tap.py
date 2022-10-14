@@ -7,9 +7,11 @@ from singer_sdk import Tap, Stream
 from singer_sdk import typing as th  # JSON schema typing helpers
 # TODO: Import your custom stream types here:
 from tap_podbean.streams import (
-    PodbeanStream,
     PrivateMembersStream,
+    PodbeanStream,
     PodcastsStream,
+    EpisodesStream,
+    PodcastDownloadReportsStream,
     PodcastEngagementReportsStream,
 #    GroupsStream,
 )
@@ -18,7 +20,9 @@ from tap_podbean.streams import (
 STREAM_TYPES = [
 #    PrivateMembersStream,
     PodcastsStream,
-    PodcastEngagementReportsStream,
+#    EpisodesStream,
+    PodcastDownloadReportsStream,
+#    PodcastEngagementReportsStream,
 #    GroupsStream,
 ]
 
@@ -61,7 +65,13 @@ class TapPodbean(Tap):
             'page_limit',
             th.IntegerType,
             description='[Optional] Default value: 20; Size range: 0-100'
-        )
+        ),
+        #th.Property(
+        #    'process_download_urls',
+        #    th.BooleanType,
+        #    default=False,
+        #    description='[Optional] Default value: false. When set to true, streams returning download urls will stream the contents of the file.'
+        #),
     ).to_dict()
 
     def discover_streams(self) -> List[Stream]:
