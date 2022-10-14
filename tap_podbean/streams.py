@@ -8,6 +8,7 @@ import json
 import requests
 import re
 import csv
+import io
 
 from tap_podbean.client import PodbeanStream
 from tap_podbean.paginator import PodbeanPaginator
@@ -33,6 +34,16 @@ class PrivateMembersStream(PodbeanStream):
     replication_key = None
     schema_filepath = get_schema_fp('private_members')
 
+class EpisodesStream(PodbeanStream):
+    """Define custom stream."""
+    name = 'episodes'
+    path = '/v1/episodes'
+    records_jsonpath = '$.episodes[*]'
+    primary_keys = ['id']
+    replication_key = None
+    schema_filepath = get_schema_fp('episodes')
+
+
 
 class PodcastsStream(PodbeanStream):
     """Define custom stream."""
@@ -49,22 +60,20 @@ class PodcastsStream(PodbeanStream):
             'year': 2021
         }
 
-
-class _PodbeanReportDownloadStream(PodbeanStream):
-    _schema = None
+class _PodbeanReportCsvStream(PodbeanStream):
     primary_keys = [None]
     replication_key = None
     records_jsonpath = '$.download_urls'
     parent_stream_type = PodcastsStream
 
-    @property
-    def schema(self) -> dict:
-        if not self._schema:
-            fp = get_schema_fp('report_download')
-            with open(fp, 'r') as f:
-                self._schema:dict = json.load(f)
-
-        return self._schema
+    #@property
+    #def schema(self) -> dict:
+    #    if not self._schema:
+    #        fp = get_schema_fp('report_download')
+    #        with open(fp, 'r') as f:
+    #            self._schema:dict = json.load(f)
+#
+    #    return self._schema
 
 
     def post_process(self, row: dict, context: dict | None = None) -> dict | None:
@@ -73,35 +82,55 @@ class _PodbeanReportDownloadStream(PodbeanStream):
         Returns
             Dict of response records excluding empty records
         """
-        def pattern_match(val) -> bool:
-            pattern_properties:dict = self._schema.get('patternProperties')
+        #def pattern_match(val) -> bool:
+        #    pattern_properties:dict = self._schema.get('patternProperties')
+        #    
+        #    for pattern in pattern_properties:
+        #        schema = pattern_properties[pattern]
+#
+        #        if re.match(pattern, val):
+        #            self._schema['properties'][val] = schema
+        #            return True
+#
+        #def remove_empty(val) -> list:
+        #    return [v for v in val if v]
+
+        pattern = r'^\d{4}-\d{1,2}$'
+        download_urls = [v for k,v in row.items() if re.match(pattern, k) and v]
+
+        #TODO: clean up reports output
+
+        report = []
+        for url in download_urls:
+            response = requests.get(url)
+            reader = csv.DictReader(response.text.splitlines(), delimiter=',')
+            data = [r for r in reader]
+            report.append(data)
             
-            for pattern in pattern_properties:
-                schema = pattern_properties[pattern]
-
-                if re.match(pattern, val):
-                    self._schema['properties'][val] = schema
-                    return True
-
-        def clean_vals(val) -> list:
-            return [v for v in val if v]
-
-        return {k:clean_vals(v) for k,v in row.items() if v and pattern_match(k)}
-
-
-    def get_child_context(self, record: dict, context: dict | None) -> dict:
-        period = list(record.items())[0]
-        return {
-            'download_url': record[period][0],
+        out = {
+            'podcast_id': context.get('podcast_id'),
+            'report': report
         }
 
+        return out
 
-class PodcastReportsStream(_PodbeanReportDownloadStream):
+
+    #def get_child_context(self, record: dict, context: dict | None) -> dict:
+    #    period = list(record.items())[0]
+    #    return {
+    #        'download_url': record[period][0],
+    #       #TODO: test if podcast_id is still in context
+    #    }
+
+
+class PodcastDownloadReportsStream(_PodbeanReportCsvStream):
     """Define custom stream."""
-    name = 'podcast_reports'
+    name = 'podcast_download_reports'
     path = '/v1/analytics/podcastReports'
+    schema_filepath = get_schema_fp('podcast_download_reports')
 
-class PodcastEngagementReportsStream(_PodbeanReportDownloadStream):
+class PodcastEngagementReportsStream(_PodbeanReportCsvStream):
     """Define custom stream."""
     name = 'podcast_engagement_reports'
     path = '/v1/analytics/podcastEngagementReports'
+    schema_filepath = get_schema_fp('podcast_engagement_reports')
