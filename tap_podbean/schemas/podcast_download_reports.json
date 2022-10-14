@@ -1,0 +1,31 @@
+{
+  "type":"object",
+  "properties": {
+    "podcast_id": {
+      "type": ["string", "null"]
+    },
+    "report": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "Episode Title":{
+            "type": ["string", "null"]
+          },
+          "User":{
+            "type": ["string", "null"]
+          },
+          "State":{
+            "type": ["string", "null"]
+          },
+          "Country":{
+            "type": ["string", "null"]
+          },
+          "User Agent":{
+            "type": ["string", "null"]
+          }
+        }
+      }
+    }
+  }
+}

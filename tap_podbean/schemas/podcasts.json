@@ -1,65 +1,35 @@
 {
-  "type":"object",
-  "properties":{
-    "id":{
-      "type":[
-        "string",
-        "null"
-      ]
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": ["string", "null"]
     },
-    "title":{
-      "type":[
-        "string",
-        "null"
-      ]
+    "title": {
+      "type": ["string", "null"]
     },
-    "desc":{
-      "type":[
-        "string",
-        "null"
-      ]
+    "desc": {
+      "type": ["string", "null"]
     },
-    "website":{
-      "type":[
-        "string",
-        "null"
-      ]
+    "website": {
+      "type": ["string", "null"]
     },
-    "status":{
-      "type":[
-        "string",
-        "null"
-      ]
+    "status": {
+      "type": ["string", "null"]
     },
-    "logo":{
-      "type":[
-        "string",
-        "null"
-      ]
+    "logo": {
+      "type": ["string", "null"]
     },
-    "category_name":{
-      "type":[
-        "string",
-        "null"
-      ]
+    "category_name": {
+      "type": ["string", "null"]
     },
-    "allow_episode_type":{
-      "type":[
-        "array",
-        "null"
-      ],
-      "items":{
-        "type":[
-          "string",
-          "null"
-        ]
+    "allow_episode_type": {
+      "type": "array",
+      "items": {
+        "type": ["string", "null"]
       }
     },
-    "object":{
-      "type":[
-        "string",
-        "null"
-      ]
+    "object": {
+      "type": ["string", "null"]
     }
   }
 }
