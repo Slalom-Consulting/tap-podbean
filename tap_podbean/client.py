@@ -45,7 +45,7 @@ class PodbeanStream(RESTStream):
                 params['limit'] = page_limit
         
         if context:
-            partitions = {k:v for k,v in context.items() if k in ['podcast_id', 'year']}
+            partitions = {k:v for k,v in context.items() if k in ['podcast_id', 'year', 'types']}
             
             for k,v in partitions.items():
                 params[k] = v
