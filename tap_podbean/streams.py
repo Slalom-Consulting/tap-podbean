@@ -2,26 +2,18 @@
 
 from pathlib import Path
 from typing import Any, Dict, Optional, Union, List, Iterable
-from requests import request
-from singer_sdk import typing as th  # JSON schema typing helpers
+from singer_sdk.helpers.jsonpath import extract_jsonpath
 import requests
 import re
 import csv
 
 from tap_podbean.client import PodbeanStream
-from tap_podbean.paginator import PodbeanPaginator
 
 
 SCHEMAS_DIR = Path(__file__).parent / Path('./schemas')
 
 def get_schema_fp(file_name) -> str:
     return f'{SCHEMAS_DIR}/{file_name}.json'
-
-
-def csv_download(url):
-    response = requests.get(url)
-    text = response.iter_lines()
-    reader = csv.reader(text, delimiter=',')
 
 class PrivateMembersStream(PodbeanStream):
     """Define custom stream."""
@@ -54,7 +46,7 @@ class PodcastsStream(PodbeanStream):
     def get_child_context(self, record: dict, context: dict | None) -> dict:
         return {
             'podcast_id': record['id'],
-            'year': 2021 #TODO: fix year config
+            'year': 2021 #TODO: fix year in config as partition
         }
 
 class _PodbeanReportCsvStream(PodbeanStream):
@@ -63,31 +55,38 @@ class _PodbeanReportCsvStream(PodbeanStream):
     records_jsonpath = '$.download_urls'
     parent_stream_type = PodcastsStream
 
-    def post_process(self, row: dict, context: dict | None = None) -> dict | None:
-        """Clean up response and update schema
-        
-        Returns
-            Dict of response records excluding empty records
+    def parse_response(self, response: requests.Response) -> Iterable[dict]:
+        """Parse the response and return an iterator of result records.
+        Args:
+            response: A raw `requests.Response`_ object.
+        Yields:
+            One item for every item found in the response.
+        .. _requests.Response:
+            https://requests.readthedocs.io/en/latest/api/#requests.Response
+
+        returns a dict of a row from a csv that is streamed from a url that comes from a list of urls that comes from a response
         """
 
         pattern = r'^\d{4}-\d{1,2}$'
-        download_urls = [v for k,v in row.items() if re.match(pattern, k) and v]
+        iter_records = (r for r in extract_jsonpath(self.records_jsonpath, input=response.json()))
 
-        #TODO: clean up reports output
+        for record in iter_records:
+            urls = [v for k,v in record.items() if re.match(pattern, k) and v]
 
-        report = []
-        for url in download_urls:
-            response = requests.get(url)
-            reader = csv.DictReader(response.text.splitlines(), delimiter=',')
-            data = [r for r in reader]
-            report.append(data)
-            
-        out = {
-            'podcast_id': context.get('podcast_id'),
-            'report': report
+            for url in urls:
+                with requests.get(url, stream=True) as r:
+                    f = (line.decode('utf-8-sig') for line in r.iter_lines())
+                    reader = csv.DictReader(f, delimiter=',')
+                    for row in reader:
+                        yield row
+
+    def post_process(self, row: dict, context: dict | None = None) -> dict | None:
+        """adds in the podcast id to row"""
+        id = {
+            'podcast_id': context.get('podcast_id')
         }
 
-        return out
+        return {**id, **row}
 
 class PodcastDownloadReportsStream(_PodbeanReportCsvStream):
     """Define custom stream."""
