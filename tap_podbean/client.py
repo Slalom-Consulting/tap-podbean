@@ -1,14 +1,13 @@
 """REST client handling, including PodbeanStream base class."""
 
-from pathlib import Path
 from typing import Any, Dict, Optional
-#from memoization import cached
+from pathlib import Path
 from singer_sdk.streams import RESTStream
 from tap_podbean.auth import PodbeanAuthenticator
 from tap_podbean.paginator import PodbeanPaginator
 
-
 SCHEMAS_DIR = Path(__file__).parent / Path("./schemas")
+
 class PodbeanStream(RESTStream):
     """Podbean stream class."""
 

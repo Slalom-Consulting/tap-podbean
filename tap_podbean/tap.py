@@ -1,12 +1,11 @@
 """Podbean tap class."""
 
 from typing import List
-
 from singer_sdk import Tap, Stream
 from singer_sdk import typing as th  # JSON schema typing helpers
-# TODO: Import your custom stream types here:
+
 from tap_podbean.streams import (
-    PodbeanStream,
+#    PodbeanStream,
     PrivateMembersStream,
     PodcastsStream,
     EpisodesStream,
@@ -15,8 +14,7 @@ from tap_podbean.streams import (
     PodcastAnalyticReportsStream,
     NetworkAnalyticReportsStream,
 )
-# TODO: Compile a list of custom stream types here
-#       OR rewrite discover_streams() below with your custom logic.
+
 STREAM_TYPES = [
     PrivateMembersStream,
     PodcastsStream,
@@ -27,12 +25,10 @@ STREAM_TYPES = [
     PodcastAnalyticReportsStream, 
 ]
 
-
 class TapPodbean(Tap):
     """Podbean tap class."""
     name = 'tap-podbean'
 
-    # TODO: Update this section with the actual config values you expect:
     config_jsonschema = th.PropertiesList(
         th.Property(
             'client_id',
@@ -61,12 +57,12 @@ class TapPodbean(Tap):
         th.Property(
             'auth_expires_in',
             th.IntegerType,
-            description='[Optional] Default value: 604800; Size range: 60-604800'
+            description='[Optional] API default value: 604800; Size range: 60-604800'
         ),
         th.Property(
             'page_limit',
             th.IntegerType,
-            description='[Optional] Default value: 20; Size range: 0-100'
+            description='[Optional] API default value: 20; Size range: 0-100'
         ),
     ).to_dict()
 

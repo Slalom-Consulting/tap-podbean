@@ -1,7 +1,7 @@
 """Stream type classes for tap-podbean."""
 
+from typing import Any, Dict, Optional, List, Iterable
 from pathlib import Path
-from typing import Any, Dict, Optional, Union, List, Iterable
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 from tap_podbean.auth import PodbeanPartitionAuthenticator
 from tap_podbean.client import PodbeanStream
@@ -10,7 +10,6 @@ import requests
 import json
 import csv
 import re
-
 
 SCHEMAS_DIR = Path(__file__).parent / Path('./schemas')
 
@@ -34,6 +33,7 @@ class PodcastsStream(PodbeanStream):
     schema_filepath = get_schema_fp('podcasts')
 
 class _PodcastPartitionStream(PodbeanStream):
+    """Base class for podcast partitions"""
     @property
     def authenticator(self) -> PodbeanPartitionAuthenticator:
         return PodbeanPartitionAuthenticator(self)
@@ -57,7 +57,6 @@ class EpisodesStream(_PodcastPartitionStream):
         auth = {'access_token': self.authenticator.tokens.get(podcast_id)}
         base_params = super().get_url_params(context, next_page_token)
         return {**auth, **base_params}
-
 
 class _CsvStream(_PodcastPartitionStream):
     """Class for csv report streams"""
@@ -139,7 +138,7 @@ class _CsvStream(_PodcastPartitionStream):
                 for row in reader:
                     yield row
 
-    def post_process(self, row: dict, context: Union[dict, None] = None) -> Union[dict, None]:
+    def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
         """Add context to and filter row"""
         record_date_text = row.get(self.response_date_key).lstrip("'")
         record_date = datetime.strptime(record_date_text,'%Y-%m-%d %H:%M:%S')
@@ -171,7 +170,7 @@ class NetworkAnalyticReportsStream(PodbeanStream):
         types = {'types[]': ['followers','likes','comments','total_episode_length']}
         return types
 
-    def post_process(self, row: dict, context: Union[dict, None] = None) -> Union[dict, None]:
+    def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
         return {'podcast_id': 'network', **row}
 
 class PodcastAnalyticReportsStream(_PodcastPartitionStream):
@@ -192,6 +191,6 @@ class PodcastAnalyticReportsStream(_PodcastPartitionStream):
         podcast = {'podcast_id': podcast_id}
         return {**auth, **types, **podcast}
 
-    def post_process(self, row: dict, context: Union[dict, None] = None) -> Union[dict, None]:
+    def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
         id = context['podcast_id']
         return {'podcast_id': id, **row}

@@ -1,6 +1,6 @@
 """Auth handling for PodbeanStream."""
 
-from typing import Any, Union
+from typing import Optional
 from singer_sdk.authenticators import OAuthAuthenticator
 from singer_sdk.streams import RESTStream
 from singer_sdk.helpers._util import utc_now
@@ -10,13 +10,14 @@ class PodbeanAuthenticator(OAuthAuthenticator):
     def __init__(
         self,
         stream: RESTStream,
-        podcast_id: Union[str, None] = None,
-        default_expiration: Union[int, None] = None,
+        podcast_id: Optional[str] = None,
+        default_expiration: Optional[int] = None,
     ) -> None:
         """Create a new authenticator.
         Args:
             stream: The stream instance to use with this authenticator.
-            default_expiration: Default token expiry in seconds.
+            podcast_id: [Optional] Return auth for a specific podcast. If None uses api default.
+            default_expiration: [Optional] Default token expiry in seconds. If None uses api default.
         """
         expiration = default_expiration or stream.config.get('auth_expires_in') or None
         super().__init__(stream=stream, default_expiration=expiration)
@@ -32,6 +33,7 @@ class PodbeanAuthenticator(OAuthAuthenticator):
 
     @property
     def auth_endpoint(self) -> str:
+        """Auth endpoint with basic auth included in path."""
         auth_endpoint = f'{self.url_base}{self.default_endpoint}'
         basic_auth = f'{self.client_id}:{self.client_secret}@'
         return f'{auth_endpoint}'.replace('://', f'://{basic_auth}')
@@ -53,24 +55,25 @@ class PodbeanAuthenticator(OAuthAuthenticator):
         return {'access_token': self.access_token}
 
 class PodbeanPartitionAuthenticator(PodbeanAuthenticator):
+    """Authenticator with auth tokens for each podcast."""
     default_endpoint = '/v1/oauth/multiplePodcastsToken'
     _tokens = None
 
     @property
     def auth_params(self) -> dict:
-        """[DO NOT REMOVE] Handled by partitions""" 
+        """[DO NOT REMOVE] Handled by partitions. Overrides parent class.""" 
         return {}
 
     @property
     def tokens(self) -> dict:
+        """Gets tokens if not valid and stores auth tokens per podcast"""
         if not self.is_token_valid():
             self.update_access_token()
 
         return self._tokens
 
-    # Authentication and refresh
     def update_access_token(self) -> None:
-        """Update `access_token` along with: `last_refreshed` and `expires_in` and `podcasts`.
+        """Update `access_token` along with: `last_refreshed` and `expires_in` and `tokens`.
         Raises:
             RuntimeError: When OAuth login fails.
         """
