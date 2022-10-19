@@ -46,7 +46,7 @@ class TapPodbean(Tap):
             'start_date',
             th.DateTimeType,
             required=True,
-            description='The earliest record date to sync'
+            description='The earliest datetime (UTC) to sync records'
         ),
         th.Property(
             'api_url',

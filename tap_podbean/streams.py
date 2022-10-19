@@ -74,17 +74,17 @@ class _CsvStream(_PodcastPartitionStream):
         podcast_ids = [p for p in self.authenticator.tokens.keys()]
 
         start_year = self.start_date.year
-        current_year = date.today().year
+        current_year = datetime.utcnow().date().year
 
         if start_year < current_year:
             year_rng = range(current_year + 1 - start_year)
             years = [start_year + y for y in year_rng]
-
-        elif start_year == current_year:
-            years = [current_year]
     
         elif start_year > current_year:
             years = [start_year]
+
+        else:
+            years = [current_year]
     
         def json_str(podcast_id, year):
             part = {
