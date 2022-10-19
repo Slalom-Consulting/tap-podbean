@@ -1,29 +1,30 @@
 """Podbean tap class."""
 
-import re
 from typing import List
 
 from singer_sdk import Tap, Stream
 from singer_sdk import typing as th  # JSON schema typing helpers
 # TODO: Import your custom stream types here:
 from tap_podbean.streams import (
-    PrivateMembersStream,
     PodbeanStream,
+    PrivateMembersStream,
     PodcastsStream,
     EpisodesStream,
     PodcastDownloadReportsStream,
     PodcastEngagementReportsStream,
-#    GroupsStream,
+    PodcastAnalyticReportsStream,
+    NetworkAnalyticReportsStream,
 )
 # TODO: Compile a list of custom stream types here
 #       OR rewrite discover_streams() below with your custom logic.
 STREAM_TYPES = [
-#    PrivateMembersStream,
+    PrivateMembersStream,
     PodcastsStream,
-#    EpisodesStream,
+    EpisodesStream,
     PodcastDownloadReportsStream,
-#    PodcastEngagementReportsStream,
-#    GroupsStream,
+    PodcastEngagementReportsStream,
+    NetworkAnalyticReportsStream,
+    PodcastAnalyticReportsStream, 
 ]
 
 
@@ -67,12 +68,6 @@ class TapPodbean(Tap):
             th.IntegerType,
             description='[Optional] Default value: 20; Size range: 0-100'
         ),
-        #th.Property(
-        #    'process_download_urls',
-        #    th.BooleanType,
-        #    default=False,
-        #    description='[Optional] Default value: false. When set to true, streams returning download urls will stream the contents of the file.'
-        #),
     ).to_dict()
 
     def discover_streams(self) -> List[Stream]:

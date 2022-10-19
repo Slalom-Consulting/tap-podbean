@@ -3,12 +3,13 @@
 from pathlib import Path
 from typing import Any, Dict, Optional, Union, List, Iterable
 from singer_sdk.helpers.jsonpath import extract_jsonpath
-import requests
-from datetime import datetime, date
-import re
-import csv
-
+from tap_podbean.auth import PodbeanPartitionAuthenticator
 from tap_podbean.client import PodbeanStream
+from datetime import datetime, date
+import requests
+import json
+import csv
+import re
 
 
 SCHEMAS_DIR = Path(__file__).parent / Path('./schemas')
@@ -24,14 +25,6 @@ class PrivateMembersStream(PodbeanStream):
     replication_key = None
     schema_filepath = get_schema_fp('private_members')
 
-class EpisodesStream(PodbeanStream):
-    name = 'episodes'
-    path = '/v1/episodes'
-    records_jsonpath = '$.episodes[*]'
-    primary_keys = ['id']
-    replication_key = None
-    schema_filepath = get_schema_fp('episodes')
-
 class PodcastsStream(PodbeanStream):
     name = 'podcasts'
     path = '/v1/podcasts'
@@ -40,23 +33,81 @@ class PodcastsStream(PodbeanStream):
     replication_key = None
     schema_filepath = get_schema_fp('podcasts')
 
-    def get_child_context(self, record: dict, context: dict | None) -> dict:
-        return {
-            'podcast_id': record['id'],
-            'year': 2021 #TODO: fix year in config as partition
-        }
-class _PodbeanReportCsvStream(PodbeanStream):
+class _PodcastPartitionStream(PodbeanStream):
+    @property
+    def authenticator(self) -> PodbeanPartitionAuthenticator:
+        return PodbeanPartitionAuthenticator(self)
+
+class EpisodesStream(_PodcastPartitionStream):
+    name = 'episodes'
+    path = '/v1/episodes'
+    records_jsonpath = '$.episodes[*]'
+    primary_keys = ['id']
+    replication_key = None
+    schema_filepath = get_schema_fp('episodes')
+
+    @property
+    def partitions(self) -> List[dict]:
+        return [{'podcast_id':k} for k in self.authenticator.tokens.keys()]
+
+    def get_url_params(
+        self, context: Optional[dict], next_page_token: Optional[int]
+    ) -> Dict[str, Any]:
+        podcast_id = context['podcast_id']
+        auth = {'access_token': self.authenticator.tokens.get(podcast_id)}
+        base_params = super().get_url_params(context, next_page_token)
+        return {**auth, **base_params}
+
+
+class _CsvStream(_PodcastPartitionStream):
     """Class for csv report streams"""
     primary_keys = [None]
     replication_key = None
-    date_key = None
+    response_date_key = None
     records_jsonpath = '$.download_urls'
-    parent_stream_type = PodcastsStream
-    #partitions = {'years': [2022]}
 
     @property
-    def start_date(self):
-        return datetime.strptime(self.config.get('start_date'),'%Y-%m-%dT%H:%M:%S')
+    def start_date(self) -> datetime:
+        return datetime.strptime(self.config.get('start_date'), '%Y-%m-%dT%H:%M:%S')
+
+    @property
+    def partitions(self) -> List[dict]:
+        podcast_ids = [p for p,v in self.authenticator.tokens.items()]
+
+        start_year = self.start_date.year
+        current_year = date.today().year
+
+        if start_year < current_year:
+            year_rng = range(current_year + 1 - start_year)
+            years = [start_year + y for y in year_rng]
+
+        elif start_year == current_year:
+            years = [current_year]
+    
+        elif start_year > current_year:
+            years = [start_year]
+    
+        def json_str(podcast_id, year):
+            part = {
+                'podcast_id': podcast_id,
+                'year': year
+            }
+            return json.dumps(part)
+
+        return [{'partition':json_str(p,y)} for p in podcast_ids for y in years]
+
+    def get_url_params(
+        self, context: Optional[dict], next_page_token: Optional[int]
+    ) -> Dict[str, Any]:
+        """Return a dictionary of values to be used in URL parameterization."""
+        parts = json.loads(context['partition'])
+        podcast_id = parts['podcast_id']
+        auth = {'access_token': self.authenticator.tokens.get(podcast_id)}
+        #base_params = super().get_url_params(None, next_page_token)
+        params = {**auth}
+        params['podcast_id'] = podcast_id
+        params['year'] = parts['year']
+        return params
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
         """Parse CSVs obtained from urls in the response and return iterator of the CSV records."""
@@ -88,36 +139,59 @@ class _PodbeanReportCsvStream(PodbeanStream):
                 for row in reader:
                     yield row
 
-    def post_process(self, row: dict, context: dict | None = None) -> dict | None:
+    def post_process(self, row: dict, context: Union[dict, None] = None) -> Union[dict, None]:
         """Add context to and filter row"""
-        record_date_text = row.get(self.date_key).lstrip("'")
-
-        #cleans up excel text char in date
-        #if record_date_text[0] == "'":
-        #    record_date_text = record_date_text.lstrip("'")
-        #    row[self.date_key] = record_date_text
-
+        record_date_text = row.get(self.response_date_key).lstrip("'")
         record_date = datetime.strptime(record_date_text,'%Y-%m-%d %H:%M:%S')
 
         if record_date >= self.start_date:
-            id = context.get('podcast_id')
+            id = json.loads(context['partition'])['podcast_id']
             return {'podcast_id': id, **row}
 
-class PodcastDownloadReportsStream(_PodbeanReportCsvStream):
+class PodcastDownloadReportsStream(_CsvStream):
     name = 'podcast_download_reports'
     path = '/v1/analytics/podcastReports'
     schema_filepath = get_schema_fp('podcast_download_reports')
-    date_key = 'Time(GMT)'
+    response_date_key = 'Time(GMT)'
 
-class PodcastEngagementReportsStream(_PodbeanReportCsvStream):
+class PodcastEngagementReportsStream(_CsvStream):
     name = 'podcast_engagement_reports'
     path = '/v1/analytics/podcastEngagementReports'
     schema_filepath = get_schema_fp('podcast_engagement_reports')
-    date_key = 'Time(GMT)'
+    response_date_key = 'Time(GMT)'
 
-class PodcastAnalyticReportsStream(PodbeanStream):
-    name = 'podcast_analytic_reports'
+class NetworkAnalyticReportsStream(PodbeanStream):
+    name = 'podcast_analytic_report'
     path = '/v1/analytics/podcastAnalyticReports'
-    schema_filepath = get_schema_fp('podcast_engagement_reports')
-    parent_stream_type = PodcastsStream
-    types = ('followers','likes','comments','total_episode_length')
+    schema_filepath = get_schema_fp('analytics_reports')
+
+    def get_url_params(
+            self, context: Optional[dict], next_page_token: Optional[int]
+        ) -> Dict[str, Any]:
+        types = {'types[]': ['followers','likes','comments','total_episode_length']}
+        return types
+
+    def post_process(self, row: dict, context: Union[dict, None] = None) -> Union[dict, None]:
+        return {'podcast_id': 'network', **row}
+
+class PodcastAnalyticReportsStream(_PodcastPartitionStream):
+    name = 'podcast_analytic_report'
+    path = '/v1/analytics/podcastAnalyticReports'
+    schema_filepath = get_schema_fp('analytics_reports')
+
+    @property
+    def partitions(self) -> List[dict]:
+        return [{'podcast_id':k} for k in self.authenticator.tokens.keys()]
+
+    def get_url_params(
+        self, context: Optional[dict], next_page_token: Optional[int]
+    ) -> Dict[str, Any]:
+        podcast_id = context['podcast_id']
+        auth = {'access_token': self.authenticator.tokens.get(podcast_id)}
+        types = {'types[]': ['followers','likes','comments','total_episode_length']}
+        podcast = {'podcast_id': podcast_id}
+        return {**auth, **types, **podcast}
+
+    def post_process(self, row: dict, context: Union[dict, None] = None) -> Union[dict, None]:
+        id = context['podcast_id']
+        return {'podcast_id': id, **row}
