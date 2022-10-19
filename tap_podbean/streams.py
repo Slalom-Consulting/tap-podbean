@@ -71,7 +71,7 @@ class _CsvStream(_PodcastPartitionStream):
 
     @property
     def partitions(self) -> List[dict]:
-        podcast_ids = [p for p,v in self.authenticator.tokens.items()]
+        podcast_ids = [p for p in self.authenticator.tokens.keys()]
 
         start_year = self.start_date.year
         current_year = date.today().year
