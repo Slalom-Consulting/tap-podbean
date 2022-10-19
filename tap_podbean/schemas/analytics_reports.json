@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "podcast_id": {
+      "type": ["string", "null"]
+    },
+    "followers": {
+      "type": ["integer", "null"]
+    },
+    "likes": {
+      "type": ["integer", "null"]
+    },
+    "comments": {
+      "type": ["integer", "null"]
+    },
+    "total_episode_length": {
+      "type": ["integer", "null"]
+    }
+  }
+}
