@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "properties": {
+    "podcast_id": {
+      "type": ["string", "null"]
+    },
+    "Time(GMT)": {
+      "type": ["string", "null"]
+    },
+    "Episode Title":{
+      "type": ["string", "null"]
+    },
+    "User":{
+      "type": ["string", "null"]
+    },
+    "State":{
+      "type": ["string", "null"]
+    },
+    "Country":{
+      "type": ["string", "null"]
+    },
+    "User Agent":{
+      "type": ["string", "null"]
+    }
+  }
+}

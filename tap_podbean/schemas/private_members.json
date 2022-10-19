@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": ["string", "null"]
+    },
+    "create_time": {
+      "type": ["string", "null"]
+    },
+    "last_access_time": {
+      "type": ["string", "null"]
+    },
+    "object": {
+      "type": ["string", "null"]
+    }
+  }
+}
