@@ -6,13 +6,13 @@ from singer_sdk.streams import RESTStream
 from singer_sdk.helpers._util import utc_now
 import requests
 
+
 class PodbeanAuthenticator(OAuthAuthenticator):
     def __init__(
-        self,
-        stream: RESTStream,
-        podcast_id: Optional[str] = None,
-        default_expiration: Optional[int] = None,
-    ) -> None:
+            self, stream: RESTStream,
+            podcast_id: Optional[str] = None,
+            default_expiration: Optional[int] = None
+        ) -> None:
         """Create a new authenticator.
         Args:
             stream: The stream instance to use with this authenticator.
@@ -53,6 +53,7 @@ class PodbeanAuthenticator(OAuthAuthenticator):
             self.update_access_token()
         
         return {'access_token': self.access_token}
+
 
 class PodbeanPartitionAuthenticator(PodbeanAuthenticator):
     """Authenticator with auth tokens for each podcast."""

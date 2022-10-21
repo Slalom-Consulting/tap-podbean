@@ -6,11 +6,9 @@ from singer_sdk.streams import RESTStream
 from tap_podbean.auth import PodbeanAuthenticator
 from tap_podbean.paginator import PodbeanPaginator
 
-SCHEMAS_DIR = Path(__file__).parent / Path("./schemas")
 
 class PodbeanStream(RESTStream):
     """Podbean stream class."""
-
     @property
     def url_base(self) -> str:
         """Return the base url for this API."""
@@ -26,8 +24,8 @@ class PodbeanStream(RESTStream):
         return PodbeanPaginator()
 
     def get_url_params(
-        self, context: Optional[dict], next_page_token: Optional[int]
-    ) -> Dict[str, Any]:
+            self, context: Optional[dict], next_page_token: Optional[int]
+        ) -> Dict[str, Any]:
         """Return a dictionary of values to be used in URL parameterization."""
         params = {}
         

@@ -16,6 +16,7 @@ SCHEMAS_DIR = Path(__file__).parent / Path('./schemas')
 def get_schema_fp(file_name) -> str:
     return f'{SCHEMAS_DIR}/{file_name}.json'
 
+
 class PrivateMembersStream(PodbeanStream):
     name = 'private_members'
     path = '/v1/privateMembers'
@@ -23,6 +24,7 @@ class PrivateMembersStream(PodbeanStream):
     primary_keys = ['email']
     replication_key = None
     schema_filepath = get_schema_fp('private_members')
+
 
 class PodcastsStream(PodbeanStream):
     name = 'podcasts'
@@ -38,6 +40,7 @@ class _PodcastPartitionStream(PodbeanStream):
     def authenticator(self) -> PodbeanPartitionAuthenticator:
         return PodbeanPartitionAuthenticator(self)
 
+
 class EpisodesStream(_PodcastPartitionStream):
     name = 'episodes'
     path = '/v1/episodes'
@@ -51,12 +54,13 @@ class EpisodesStream(_PodcastPartitionStream):
         return [{'podcast_id':k} for k in self.authenticator.tokens.keys()]
 
     def get_url_params(
-        self, context: Optional[dict], next_page_token: Optional[int]
-    ) -> Dict[str, Any]:
+            self, context: Optional[dict], next_page_token: Optional[int]
+        ) -> Dict[str, Any]:
         podcast_id = context['podcast_id']
         auth = {'access_token': self.authenticator.tokens.get(podcast_id)}
         base_params = super().get_url_params(context, next_page_token)
         return {**auth, **base_params}
+
 
 class _CsvStream(_PodcastPartitionStream):
     """Class for csv report streams"""
@@ -86,7 +90,7 @@ class _CsvStream(_PodcastPartitionStream):
         else:
             years = [current_year]
     
-        def json_str(podcast_id, year):
+        def json_str(podcast_id, year) -> str:
             part = {
                 'podcast_id': podcast_id,
                 'year': year
@@ -96,8 +100,8 @@ class _CsvStream(_PodcastPartitionStream):
         return [{'partition':json_str(p,y)} for p in podcast_ids for y in years]
 
     def get_url_params(
-        self, context: Optional[dict], next_page_token: Optional[int]
-    ) -> Dict[str, Any]:
+            self, context: Optional[dict], next_page_token: Optional[int]
+        ) -> Dict[str, Any]:
         """Return a dictionary of values to be used in URL parameterization."""
         parts = json.loads(context['partition'])
         podcast_id = parts['podcast_id']
@@ -147,17 +151,20 @@ class _CsvStream(_PodcastPartitionStream):
             id = json.loads(context['partition'])['podcast_id']
             return {'podcast_id': id, **row}
 
+
 class PodcastDownloadReportsStream(_CsvStream):
     name = 'podcast_download_reports'
     path = '/v1/analytics/podcastReports'
     schema_filepath = get_schema_fp('podcast_download_reports')
     response_date_key = 'Time(GMT)'
 
+
 class PodcastEngagementReportsStream(_CsvStream):
     name = 'podcast_engagement_reports'
     path = '/v1/analytics/podcastEngagementReports'
     schema_filepath = get_schema_fp('podcast_engagement_reports')
     response_date_key = 'Time(GMT)'
+
 
 class NetworkAnalyticReportsStream(PodbeanStream):
     name = 'podcast_analytic_report'
@@ -172,6 +179,7 @@ class NetworkAnalyticReportsStream(PodbeanStream):
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
         return {'podcast_id': 'network', **row}
+
 
 class PodcastAnalyticReportsStream(_PodcastPartitionStream):
     name = 'podcast_analytic_report'

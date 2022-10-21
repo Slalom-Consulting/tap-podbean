@@ -4,6 +4,7 @@ from typing import Optional
 from singer_sdk.pagination import BaseAPIPaginator
 from requests import Response
 
+
 class PodbeanPaginator(BaseAPIPaginator):
     """Paginator class for APIs that use page number."""
     def __init__(self) -> None:
@@ -20,6 +21,5 @@ class PodbeanPaginator(BaseAPIPaginator):
         data:dict = response.json()
 
         has_more:bool = data.get("has_more")
-        
         if has_more:
             return data.get("offset") + 1

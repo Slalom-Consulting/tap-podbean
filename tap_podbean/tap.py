@@ -25,6 +25,7 @@ STREAM_TYPES = [
     PodcastAnalyticReportsStream, 
 ]
 
+
 class TapPodbean(Tap):
     """Podbean tap class."""
     name = 'tap-podbean'
@@ -33,36 +34,36 @@ class TapPodbean(Tap):
         th.Property(
             'client_id',
             th.StringType,
-            required=True,
-            description='The token to authenticate against the API service'
+            required = True,
+            description = 'The token to authenticate against the API service'
         ),
         th.Property(
             'client_secret',
             th.StringType,
-            required=True,
-            description='Project IDs to replicate'
+            required = True,
+            description = 'Project IDs to replicate'
         ),
         th.Property(
             'start_date',
             th.DateTimeType,
-            required=True,
-            description='The earliest datetime (UTC) to sync records'
+            required = True,
+            description = 'The earliest datetime (UTC) to sync records'
         ),
         th.Property(
             'api_url',
             th.StringType,
             default='https://api.podbean.com',
-            description='The url for the API service'
+            description = 'The url for the API service'
         ),
         th.Property(
             'auth_expires_in',
             th.IntegerType,
-            description='[Optional] API default value: 604800; Size range: 60-604800'
+            description = '[Optional] API default value: 604800; Size range: 60-604800'
         ),
         th.Property(
             'page_limit',
             th.IntegerType,
-            description='[Optional] API default value: 20; Size range: 0-100'
+            description = '[Optional] API default value: 20; Size range: 0-100'
         ),
     ).to_dict()
 
