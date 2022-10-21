@@ -4,6 +4,8 @@
 
 Built with the [Meltano Tap SDK](https://sdk.meltano.com) for Singer Taps.
 
+[Podbean API Reference](https://developers.podbean.com/podbean-api-docs/)
+
 <!--
 
 Developer TODO: Update the below as needed to correctly describe the install procedure. For instance, if you do not have a PyPi repo, or if you want users to directly install from your git repo, you can modify this step as appropriate.
@@ -38,6 +40,34 @@ tap-podbean --about --format=markdown
 ```
 -->
 
+Podbean tap class.
+
+Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Targets.
+
+## Capabilities
+
+* `catalog`
+* `state`
+* `discover`
+* `about`
+* `stream-maps`
+* `schema-flattening`
+
+## Settings
+
+| Setting             | Required | Default | Description |
+|:--------------------|:--------:|:-------:|:------------|
+| client_id           | True     | None    | The token to authenticate against the API service |
+| client_secret       | True     | None    | Project IDs to replicate |
+| start_date          | True     | None    | The earliest datetime (UTC) to sync records |
+| api_url             | False    | https://api.podbean.com | The url for the API service |
+| auth_expires_in     | False    | None    | API default value: 604800; Size range: 60-604800 |
+| page_limit          | False    | None    | API default value: 20; Size range: 0-100 |
+| stream_maps         | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
+| stream_map_config   | False    | None    | User-defined config values to be used within map expressions. |
+| flattening_enabled  | False    | None    | 'True' to enable schema flattening and automatically expand nested properties. |
+| flattening_max_depth| False    | None    | The max depth to flatten schemas. |
+
 A full list of supported settings and capabilities for this
 tap is available by running:
 
@@ -53,13 +83,17 @@ environment variable is set either in the terminal context or in the `.env` file
 
 ### Source Authentication and Authorization
 
-<!--
-Developer TODO: If your tap requires special access on the source system, or any special authentication requirements, provide those here.
--->
+Obtain the client_id and client_secret from an existing app or [register a new app](https://developers.podbean.com/).
 
 ## Usage
 
 You can easily run `tap-podbean` by itself or in a pipeline using [Meltano](https://meltano.com/).
+
+Scopes used by this tap:
+
+* podcast_read
+* episode_read
+* private_members
 
 ### Executing the Tap Directly
 

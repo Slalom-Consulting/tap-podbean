@@ -58,12 +58,12 @@ class TapPodbean(Tap):
         th.Property(
             'auth_expires_in',
             th.IntegerType,
-            description = '[Optional] API default value: 604800; Size range: 60-604800'
+            description = 'API default value: 604800; Size range: 60-604800'
         ),
         th.Property(
             'page_limit',
             th.IntegerType,
-            description = '[Optional] API default value: 20; Size range: 0-100'
+            description = 'API default value: 20; Size range: 0-100'
         ),
     ).to_dict()
 
