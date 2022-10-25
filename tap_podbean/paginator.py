@@ -20,6 +20,6 @@ class PodbeanPaginator(BaseAPIPaginator):
         """
         data:dict = response.json()
 
-        has_more:bool = data.get("has_more")
+        has_more:bool = data.get('has_more')
         if has_more:
-            return data.get("offset") + 1
+            return data['offset'] + 1
