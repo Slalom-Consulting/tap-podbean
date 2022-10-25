@@ -14,7 +14,7 @@ class PodbeanStream(RESTStream):
     @property
     def url_base(self) -> str:
         """Return the base url for this API."""
-        return self.config.get("api_url")
+        return self.config['api_url']
 
     @property
     def authenticator(self) -> PodbeanAuthenticator:
