@@ -21,7 +21,7 @@ class PodbeanStream(RESTStream):
         """Return a new authenticator object."""
         return PodbeanAuthenticator(self)
 
-    next_page_token_jsonpath = "$.has_more"
+    next_page_token_jsonpath = '$.has_more'
 
     def get_next_page_token(
         self, response: requests.Response, previous_token: Optional[Any]
@@ -44,7 +44,7 @@ class PodbeanStream(RESTStream):
         params = {}
         
         if next_page_token:
-            params["offset"] = next_page_token
+            params['offset'] = next_page_token
 
             page_limit:int = self.config.get('page_limit')
             if page_limit:
