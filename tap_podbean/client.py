@@ -35,7 +35,7 @@ class PodbeanStream(RESTStream):
             first_match = next(iter(all_matches), None)
 
             if first_match:
-                return data['offset'] + 1
+                return data['offset'] + data['limit']
 
     def get_url_params(
             self, context: Optional[dict], next_page_token: Optional[int]
