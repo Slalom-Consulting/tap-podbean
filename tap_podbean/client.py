@@ -3,9 +3,8 @@
 from typing import Any, Dict, Optional
 from singer_sdk.streams import RESTStream
 from tap_podbean.auth import PodbeanAuthenticator
-from singer_sdk.helpers.jsonpath import extract_jsonpath
+from tap_podbean.pagination import PodbeanPaginator
 from memoization import cached
-import requests
 
 
 class PodbeanStream(RESTStream):
@@ -23,19 +22,8 @@ class PodbeanStream(RESTStream):
 
     next_page_token_jsonpath = '$.has_more'
 
-    def get_next_page_token(
-        self, response: requests.Response, previous_token: Optional[Any]
-    ) -> Optional[Any]:
-        """Return a token for identifying next page or None if no more pages."""
-        if self.next_page_token_jsonpath:
-            data = response.json()
-            all_matches = extract_jsonpath(
-                self.next_page_token_jsonpath, data
-            )
-            first_match = next(iter(all_matches), None)
-
-            if first_match:
-                return data['offset'] + data['limit']
+    def get_new_paginator(self) -> PodbeanPaginator:
+        return PodbeanPaginator(self)
 
     def get_url_params(
             self, context: Optional[dict], next_page_token: Optional[int]
