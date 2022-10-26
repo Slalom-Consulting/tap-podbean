@@ -31,11 +31,11 @@ class PodbeanStream(RESTStream):
         """Return a dictionary of values to be used in URL parameterization."""
         params = {}
         
-        if next_page_token:
-            params['offset'] = next_page_token
+        if self.next_page_token_jsonpath:
+            if 'page_limit' in self.config:
+                params['limit'] = self.config['page_limit']
 
-            page_limit:int = self.config.get('page_limit')
-            if page_limit:
-                params['limit'] = page_limit  
+            if next_page_token:
+                params['offset'] = next_page_token
             
         return params
