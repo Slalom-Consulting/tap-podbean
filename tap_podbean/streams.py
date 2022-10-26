@@ -160,7 +160,6 @@ class PodcastDownloadReportsStream(_CsvStream):
     path = '/v1/analytics/podcastReports'
     schema_filepath = get_schema_fp('podcast_download_reports')
     response_date_key = 'Time(GMT)'
-    next_page_token_jsonpath = None
 
 
 class PodcastEngagementReportsStream(_CsvStream):
@@ -168,14 +167,12 @@ class PodcastEngagementReportsStream(_CsvStream):
     path = '/v1/analytics/podcastEngagementReports'
     schema_filepath = get_schema_fp('podcast_engagement_reports')
     response_date_key = 'Time(GMT)'
-    next_page_token_jsonpath = None
 
 
 class NetworkAnalyticReportsStream(PodbeanStream):
     name = 'podcast_analytic_report'
     path = '/v1/analytics/podcastAnalyticReports'
     schema_filepath = get_schema_fp('analytics_reports')
-    next_page_token_jsonpath = None
 
     def get_url_params(
             self, context: Optional[dict], next_page_token: Optional[int]
@@ -191,7 +188,6 @@ class PodcastAnalyticReportsStream(_PodcastPartitionStream):
     name = 'podcast_analytic_report'
     path = '/v1/analytics/podcastAnalyticReports'
     schema_filepath = get_schema_fp('analytics_reports')
-    next_page_token_jsonpath = None
 
     @property
     def partitions(self) -> List[dict]:

@@ -1,12 +1,20 @@
 """Pagination handling for AdobeUmapiStream."""
 
-from typing import Optional
-from singer_sdk.pagination import JSONPathPaginator
+from typing import Optional, Any
+from singer_sdk.pagination import BaseAPIPaginator
 from requests import Response
 
-class PodbeanPaginator(JSONPathPaginator):
+class PodbeanPaginator(BaseAPIPaginator):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Create a new paginator.
+        Args:
+            args: Paginator positional arguments for base class.
+            kwargs: Paginator keyword arguments for base class.
+        """
+        super().__init__(None, *args, **kwargs)
+
     def has_more(self, response: Response) -> bool:
-        """Override this method to check if the endpoint has any pages left.
+        """Check if the endpoint has any pages left.
         Args:
             response: API response object.
         Returns:
@@ -21,5 +29,6 @@ class PodbeanPaginator(JSONPathPaginator):
         Returns:
             The next page token.
         """
-        response_json = response.json()
-        return response_json['offset'] + response_json['limit']
+        page_keys = ['offset', 'limit']
+        page = {k:v for k,v in response.json().items() if k in page_keys}
+        return page['offset'] + page['limit']
