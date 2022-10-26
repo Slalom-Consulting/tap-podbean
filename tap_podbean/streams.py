@@ -5,6 +5,7 @@ from pathlib import Path
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 from tap_podbean.auth import PodbeanPartitionAuthenticator
 from tap_podbean.client import PodbeanStream
+from memoization import cached
 from datetime import datetime, date
 import requests
 import json
@@ -38,6 +39,7 @@ class PodcastsStream(PodbeanStream):
 class _PodcastPartitionStream(PodbeanStream):
     """Base class for podcast partitions"""
     @property
+    @cached
     def authenticator(self) -> PodbeanPartitionAuthenticator:
         return PodbeanPartitionAuthenticator(self)
 

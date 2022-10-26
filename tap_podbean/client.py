@@ -1,11 +1,10 @@
 """REST client handling, including PodbeanStream base class."""
 
 from typing import Any, Dict, Optional
-from pathlib import Path
 from singer_sdk.streams import RESTStream
 from tap_podbean.auth import PodbeanAuthenticator
 from singer_sdk.helpers.jsonpath import extract_jsonpath
-from singer_sdk.streams import RESTStream
+from memoization import cached
 import requests
 
 
@@ -17,6 +16,7 @@ class PodbeanStream(RESTStream):
         return self.config['api_url']
 
     @property
+    @cached
     def authenticator(self) -> PodbeanAuthenticator:
         """Return a new authenticator object."""
         return PodbeanAuthenticator(self)
