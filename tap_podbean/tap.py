@@ -50,12 +50,6 @@ class TapPodbean(Tap):
             description = 'The earliest datetime (UTC) to sync records'
         ),
         th.Property(
-            'api_url',
-            th.StringType,
-            default='https://api.podbean.com',
-            description = 'The url for the API service'
-        ),
-        th.Property(
             'auth_expiration',
             th.IntegerType,
             description = 'Expiraton in seconds for auth. (Default: 604800; Range: 60-604800)'
@@ -65,6 +59,17 @@ class TapPodbean(Tap):
             th.IntegerType,
             default=100,
             description = 'The number of records to return per page. (Default: 100; Range: 0-100)'
+        ),
+        th.Property(
+            "user_agent",
+            th.StringType,
+            description='User agent to present to the API'
+        ),
+        th.Property(
+            'api_url',
+            th.StringType,
+            default='https://api.podbean.com',
+            description = 'The url for the API service'
         ),
     ).to_dict()
 
