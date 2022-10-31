@@ -6,13 +6,14 @@ from tap_podbean.auth import PodbeanAuthenticator
 from tap_podbean.pagination import PodbeanPaginator
 from memoization import cached
 
+PAGINATION_INDEX = 0
 
 class PodbeanStream(RESTStream):
     """Podbean stream class."""
     @property
     def url_base(self) -> str:
         """Return the base url for this API."""
-        return self.config['api_url']
+        return self.config.get('api_url')
 
     @property
     @cached
@@ -21,18 +22,14 @@ class PodbeanStream(RESTStream):
         return PodbeanAuthenticator(self)
 
     def get_new_paginator(self) -> PodbeanPaginator:
-        return PodbeanPaginator()
+        page_size = self.config.get('limit')
+        return PodbeanPaginator(PAGINATION_INDEX, page_size)
 
     def get_url_params(
-            self, context: Optional[dict], next_page_token: Optional[int]
+            self, context: Optional[dict], next_page_token: Optional[dict]
         ) -> Dict[str, Any]:
         """Return a dictionary of values to be used in URL parameterization."""
-        params = {}
-
-        if next_page_token:
-            params['offset'] = next_page_token
-
-            if 'page_limit' in self.config:
-                params['limit'] = self.config['page_limit']
-            
-        return params
+        return {
+            'offset': next_page_token or PAGINATION_INDEX,
+            'limit': self.config.get('limit')
+        }

@@ -2,7 +2,7 @@
 
 from typing import List
 from singer_sdk import Tap, Stream
-from singer_sdk import typing as th  # JSON schema typing helpers
+from singer_sdk import typing as th
 
 from tap_podbean.streams import (
 #    PodbeanStream,
@@ -35,13 +35,13 @@ class TapPodbean(Tap):
             'client_id',
             th.StringType,
             required = True,
-            description = 'The token to authenticate against the API service'
+            description = 'The client identifier to authenticate against the API service'
         ),
         th.Property(
             'client_secret',
             th.StringType,
             required = True,
-            description = 'Project IDs to replicate'
+            description = 'The client secret to authenticate against the API service'
         ),
         th.Property(
             'start_date',
@@ -58,12 +58,13 @@ class TapPodbean(Tap):
         th.Property(
             'auth_expires_in',
             th.IntegerType,
-            description = 'API default value: 604800; Size range: 60-604800'
+            description = 'Expiraton in seconds for auth. (Default: 604800; Range: 60-604800)'
         ),
         th.Property(
-            'page_limit',
+            'limit',
             th.IntegerType,
-            description = 'API default value: 20; Size range: 0-100'
+            default=100,
+            description = 'The number of records to return per page. (Default: 100; Range: 0-100)'
         ),
     ).to_dict()
 

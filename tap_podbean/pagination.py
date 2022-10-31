@@ -1,17 +1,25 @@
 """Pagination handling for AdobeUmapiStream."""
 
-from typing import Optional, Any
-from singer_sdk.pagination import BaseAPIPaginator
+from typing import Any
+from singer_sdk.pagination import BaseOffsetPaginator
 from requests import Response
 
-class PodbeanPaginator(BaseAPIPaginator):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Create a new paginator.
-        Args:
-            args: Paginator positional arguments for base class.
-            kwargs: Paginator keyword arguments for base class.
-        """
-        super().__init__(None, *args, **kwargs)
+PAGINATION_DEFAULT = 20
+PAGINATION_MAX = 100
+
+
+class PodbeanPaginator(BaseOffsetPaginator):
+    def __init__(
+        self,
+        start_value: int,
+        page_size: int = PAGINATION_DEFAULT,
+        *args: Any,
+        **kwargs: Any
+    ) -> None:
+        if page_size > PAGINATION_MAX:
+            page_size = PAGINATION_MAX
+
+        super().__init__(start_value, page_size, *args, **kwargs)
 
     def has_more(self, response: Response) -> bool:
         """Check if the endpoint has any pages left.
@@ -21,14 +29,3 @@ class PodbeanPaginator(BaseAPIPaginator):
             Boolean flag used to indicate if the endpoint has more pages.
         """
         return response.json().get('has_more', False) == True
-
-    def get_next(self, response: Response) -> Optional[int]:
-        """Get the next page token.
-        Args:
-            response: API response object.
-        Returns:
-            The next page token.
-        """
-        page_keys = ['offset', 'limit']
-        page = {k:v for k,v in response.json().items() if k in page_keys}
-        return page['offset'] + page['limit']
