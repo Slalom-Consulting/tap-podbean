@@ -19,7 +19,7 @@ class PodbeanAuthenticator(OAuthAuthenticator):
             podcast_id: [Optional] Return auth for a specific podcast. If None uses api default.
             default_expiration: [Optional] Default token expiry in seconds. If None uses api default.
         """
-        expiration = default_expiration or stream.config.get('auth_expires_in') or None
+        expiration = default_expiration or stream.config.get('auth_expiration')
         super().__init__(stream=stream, default_expiration=expiration)
         self.url_base = stream.url_base
         self.podcast_id = podcast_id

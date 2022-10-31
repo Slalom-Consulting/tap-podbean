@@ -56,7 +56,7 @@ class TapPodbean(Tap):
             description = 'The url for the API service'
         ),
         th.Property(
-            'auth_expires_in',
+            'auth_expiration',
             th.IntegerType,
             description = 'Expiraton in seconds for auth. (Default: 604800; Range: 60-604800)'
         ),
