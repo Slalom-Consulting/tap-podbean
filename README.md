@@ -55,12 +55,13 @@ Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Target
 
 | Setting             | Required | Default | Description |
 |:--------------------|:--------:|:-------:|:------------|
-| client_id           | True     | None    | The token to authenticate against the API service |
-| client_secret       | True     | None    | Project IDs to replicate |
+| client_id           | True     | None    | The client identifier to authenticate against the API service |
+| client_secret       | True     | None    | The client secret to authenticate against the API service |
 | start_date          | True     | None    | The earliest datetime (UTC) to sync records |
+| auth_expiration     | False    | None    | Expiraton in seconds for auth. (Default: 604800; Range: 60-604800) |
+| limit               | False    |     100 | The number of records to return per page. (Default: 100; Range: 0-100) |
+| user_agent          | False    | None    | User agent to present to the API |
 | api_url             | False    | https://api.podbean.com | The url for the API service |
-| auth_expires_in     | False    | None    | API default value: 604800; Size range: 60-604800 |
-| page_limit          | False    | None    | API default value: 20; Size range: 0-100 |
 
 
 A full list of supported settings and capabilities for this
