@@ -57,10 +57,10 @@ class EpisodesStream(_PodcastPartitionStream):
     def get_url_params(
             self, context: Optional[dict], next_page_token: Optional[int]
         ) -> Dict[str, Any]:
+        params = super().get_url_params(context, next_page_token)
         podcast_id = context.get('podcast_id')
-        auth = {'access_token': self.authenticator.tokens.get(podcast_id)}
-        base_params = super().get_url_params(context, next_page_token)
-        return {**auth, **base_params}
+        params['access_token'] = self.authenticator.tokens.get(podcast_id)
+        return params
 
 
 class _CsvStream(_PodcastPartitionStream):
@@ -123,10 +123,7 @@ class _CsvStream(_PodcastPartitionStream):
                 return report_month >= start_month
 
         def extract_url(val) -> str:
-            if isinstance(val, list):
-                return val[0]
-            
-            return val
+            return val[0] if isinstance(val, list) else val
 
         iter_records = (r for r in extract_jsonpath(self.records_jsonpath, input=response.json()))
         iter_urls = (extract_url(v) for r in iter_records for k,v in r.items() if filter_for_stream(k) and v)
@@ -176,7 +173,6 @@ class NetworkAnalyticReportsStream(PodbeanStream):
         return {'types[]': ['followers','likes','comments','total_episode_length']}
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
-        #Add podcast id to report
         return {'podcast_id': 'network', **row}
 
 
