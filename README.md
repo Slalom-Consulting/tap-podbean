@@ -62,7 +62,6 @@ Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Target
 | limit               | False    |     100 | The number of records to return per page. (Default: 100; Range: 0-100) |
 | user_agent          | False    | None    | User agent to present to the API |
 
-
 A full list of supported settings and capabilities for this
 tap is available by running:
 

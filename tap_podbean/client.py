@@ -7,6 +7,7 @@ from tap_podbean.pagination import PodbeanPaginator
 from memoization import cached
 
 PAGINATION_INDEX = 0
+API_HOST = 'https://api.podbean.com'
 
 
 class PodbeanStream(RESTStream):
@@ -14,7 +15,7 @@ class PodbeanStream(RESTStream):
     @property
     def url_base(self) -> str:
         """Return the base url for this API."""
-        return self.config.get('api_url')
+        return self.config.get('api_url', API_HOST)
 
     @property
     @cached
