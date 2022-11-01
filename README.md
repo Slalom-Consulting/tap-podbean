@@ -61,7 +61,6 @@ Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Target
 | auth_expiration     | False    | None    | Expiraton in seconds for auth. (Default: 604800; Range: 60-604800) |
 | limit               | False    |     100 | The number of records to return per page. (Default: 100; Range: 0-100) |
 | user_agent          | False    | None    | User agent to present to the API |
-| api_url             | False    | https://api.podbean.com | The url for the API service |
 
 
 A full list of supported settings and capabilities for this
