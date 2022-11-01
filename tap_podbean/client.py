@@ -8,6 +8,7 @@ from memoization import cached
 
 PAGINATION_INDEX = 0
 
+
 class PodbeanStream(RESTStream):
     """Podbean stream class."""
     @property
