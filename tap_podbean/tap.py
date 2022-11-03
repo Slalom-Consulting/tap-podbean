@@ -41,6 +41,7 @@ class TapPodbean(Tap):
             'client_secret',
             th.StringType,
             required = True,
+            secret=True,
             description = 'The client secret to authenticate against the API service'
         ),
         th.Property(
