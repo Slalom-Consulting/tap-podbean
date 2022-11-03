@@ -4,7 +4,14 @@ from typing import Optional
 from singer_sdk.authenticators import OAuthAuthenticator
 from singer_sdk.streams import RESTStream
 from singer_sdk.helpers._util import utc_now
+from urllib.parse import urljoin
+from enum import Enum
 import requests
+
+
+class APIAuthType(str, Enum):
+    default = '/v1/oauth/token'
+    multi = '/v1/oauth/multiplePodcastsToken'
 
 
 class PodbeanAuthenticator(OAuthAuthenticator):
@@ -24,7 +31,7 @@ class PodbeanAuthenticator(OAuthAuthenticator):
         self.url_base = stream.url_base
         self.podcast_id = podcast_id
     
-    default_endpoint = '/v1/oauth/token'
+    auth_type = APIAuthType['default'].value
 
     @property
     def auth_headers(self) -> dict:
@@ -34,9 +41,9 @@ class PodbeanAuthenticator(OAuthAuthenticator):
     @property
     def auth_endpoint(self) -> str:
         """Auth endpoint with basic auth included in path."""
-        auth_endpoint = f'{self.url_base}{self.default_endpoint}'
-        basic_auth = f'{self.client_id}:{self.client_secret}@'
-        return f'{auth_endpoint}'.replace('://', f'://{basic_auth}')
+        url = urljoin(self.url_base, self.auth_type)
+        auth = f'{self.client_id}:{self.client_secret}@'
+        return url.replace('://', f'://{auth}')
 
     @property
     def oauth_request_body(self) -> dict:
@@ -57,8 +64,9 @@ class PodbeanAuthenticator(OAuthAuthenticator):
 
 class PodbeanPartitionAuthenticator(PodbeanAuthenticator):
     """Authenticator with auth tokens for each podcast."""
-    default_endpoint = '/v1/oauth/multiplePodcastsToken'
     _tokens = None
+
+    auth_type = APIAuthType['multi'].value
 
     @property
     def auth_params(self) -> dict:
