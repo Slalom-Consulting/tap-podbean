@@ -14,6 +14,7 @@ import requests
 import re
 
 SCHEMAS_DIR = Path(__file__).parent / Path('./schemas')
+ANALYTIC_REPORT_TYPES = ['followers', 'likes', 'comments', 'total_episode_length']
 
 
 class PrivateMembersStream(PodbeanStream):
@@ -95,6 +96,7 @@ class _CsvStream(_PodcastPartitionStream):
                 'podcast_id': podcast_id,
                 'year': year
             }
+            
             return json.dumps(part)
 
         return [{'partition':json_str(p,y)} for p in podcast_ids for y in years]
@@ -170,7 +172,7 @@ class NetworkAnalyticReportsStream(PodbeanStream):
     def get_url_params(
             self, context: Optional[dict], next_page_token: Optional[int]
         ) -> dict:
-        return {'types[]': ['followers','likes','comments','total_episode_length']}
+        return {'types[]': ANALYTIC_REPORT_TYPES}
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
         return {'podcast_id': 'network', **row}
@@ -193,7 +195,7 @@ class PodcastAnalyticReportsStream(_PodcastPartitionStream):
         return {
             'access_token': self.authenticator.tokens.get(podcast_id),
             'podcast_id': podcast_id,
-            'types[]': ['followers','likes','comments','total_episode_length']
+            'types[]': ANALYTIC_REPORT_TYPES
         }
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
