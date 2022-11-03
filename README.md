@@ -55,12 +55,13 @@ Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Target
 
 | Setting             | Required | Default | Description |
 |:--------------------|:--------:|:-------:|:------------|
-| client_id           | True     | None    | The client identifier to authenticate against the API service |
-| client_secret       | True     | None    | The client secret to authenticate against the API service |
-| start_date          | True     | None    | The earliest datetime (UTC) to sync records |
-| auth_expiration     | False    | None    | Expiraton in seconds for auth. (Default: 604800; Range: 60-604800) |
-| limit               | False    |     100 | The number of records to return per page. (Default: 100; Range: 0-100) |
-| user_agent          | False    | None    | User agent to present to the API |
+| client_id           | True     | None    | The client identifier to authenticate against the API service. |
+| client_secret       | True     | None    | The client secret to authenticate against the API service. |
+| start_date          | True     | None    | The earliest datetime (UTC) to sync records. |
+| auth_expiration     | False    |     300 | Expiraton in seconds for auth. (Range: 60-604800) |
+| limit               | False    |     100 | The number of records to return per page. (Range: 0-100) |
+| user_agent          | False    | None    | User agent to present to the API. |
+| api_url             | False    | None    | Override the API service base URL. |
 
 A full list of supported settings and capabilities for this
 tap is available by running:

@@ -35,41 +35,42 @@ class TapPodbean(Tap):
             'client_id',
             th.StringType,
             required = True,
-            description = 'The client identifier to authenticate against the API service'
+            description = 'The client identifier to authenticate against the API service.'
         ),
         th.Property(
             'client_secret',
             th.StringType,
             required = True,
-            secret=True,
-            description = 'The client secret to authenticate against the API service'
+            secret = True,
+            description = 'The client secret to authenticate against the API service.'
         ),
         th.Property(
             'start_date',
             th.DateTimeType,
             required = True,
-            description = 'The earliest datetime (UTC) to sync records'
+            description = 'The earliest datetime (UTC) to sync records.'
         ),
         th.Property(
             'auth_expiration',
             th.IntegerType,
-            description = 'Expiraton in seconds for auth. (Default: 604800; Range: 60-604800)'
+            default = 300,
+            description = 'Expiraton in seconds for auth. (Range: 60-604800)'
         ),
         th.Property(
             'limit',
             th.IntegerType,
-            default=100,
-            description = 'The number of records to return per page. (Default: 100; Range: 0-100)'
+            default = 100,
+            description = 'The number of records to return per page. (Range: 0-100)'
         ),
         th.Property(
             "user_agent",
             th.StringType,
-            description='User agent to present to the API'
+            description = 'User agent to present to the API.'
         ),
         th.Property(
             'api_url',
             th.StringType,
-            description = 'Override the url for the API service'
+            description = 'Override the API service base URL.'
         ),
     ).to_dict()
 
