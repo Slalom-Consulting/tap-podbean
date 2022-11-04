@@ -132,13 +132,23 @@ class _CsvStream(_PodcastPartitionStream):
         iter_records = (r for r in extract_jsonpath(self.records_jsonpath, input=response.json()))
         iter_urls = (_extract_url(v) for r in iter_records for k,v in r.items() if _is_valid_key(k) and v)
 
-        for url in iter_urls:
-            with requests.get(url, stream=True) as response:
-                file = (line.decode('utf-8-sig') for line in response.iter_lines())
-                reader = csv.DictReader(file, delimiter=',')
+        with requests.Session() as csv_requests_session:
+            def _read_csv(url: str):
+                """Read CSV using SDK Error Handeling"""
+                @self.request_decorator
+                def _csv_request(prepared_request):
+                    return csv_requests_session.send(prepared_request, stream=True, timeout=self.timeout)
 
-                for row in reader:
-                    yield row
+                request = requests.Request('GET', url=url)
+                prepared_request = csv_requests_session.prepare_request(request)
+                response = _csv_request(prepared_request)
+                file = (line.decode('utf-8-sig') for line in response.iter_lines())
+                return csv.DictReader(file, delimiter=',')
+
+            rows = (row for url in iter_urls for row in _read_csv(url))
+
+            for row in rows:
+                yield row    
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
         record_date_text: str = row.get(self.response_date_key)
