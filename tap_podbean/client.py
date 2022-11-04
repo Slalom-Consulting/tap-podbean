@@ -14,13 +14,11 @@ class PodbeanStream(RESTStream):
     """Podbean stream class."""
     @property
     def url_base(self) -> str:
-        """Return the base url for this API."""
         return self.config.get('api_url', API_URL)
 
     @property
     @cached
     def authenticator(self) -> PodbeanAuthenticator:
-        """Return a new authenticator object."""
         return PodbeanAuthenticator(self)
 
     def get_new_paginator(self) -> PodbeanPaginator:
@@ -30,7 +28,6 @@ class PodbeanStream(RESTStream):
     def get_url_params(
             self, context: Optional[dict], next_page_token: Optional[dict]
         ) -> Dict[str, Any]:
-        """Return a dictionary of values to be used in URL parameterization."""
         return {
             'offset': next_page_token or PAGINATION_INDEX,
             'limit': self.config.get('limit')
