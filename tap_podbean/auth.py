@@ -35,12 +35,10 @@ class PodbeanAuthenticator(OAuthAuthenticator):
 
     @property
     def auth_headers(self) -> dict:
-        """[DO NOT REMOVE] Prevents auth_token from being passed to header from parent class""" 
-        return {}
+        return {}  # Handled by auth_params. Overrides parent class
 
     @property
     def auth_endpoint(self) -> str:
-        """Auth endpoint with basic auth included in path."""
         url = urljoin(self.url_base, self.auth_type)
         auth = f'{self.client_id}:{self.client_secret}@'
         return url.replace('://', f'://{auth}')
@@ -70,22 +68,18 @@ class PodbeanPartitionAuthenticator(PodbeanAuthenticator):
 
     @property
     def auth_params(self) -> dict:
-        """[DO NOT REMOVE] Handled by partitions. Overrides parent class.""" 
-        return {}
+        return {}  # Handled by Stream. Overrides parent class
 
     @property
     def tokens(self) -> dict:
-        """Gets tokens if not valid and stores auth tokens per podcast"""
+        """Update and store a dict of auth tokens for each podcast."""
         if not self.is_token_valid():
             self.update_access_token()
 
         return self._tokens
 
     def update_access_token(self) -> None:
-        """Update `access_token` along with: `last_refreshed` and `expires_in` and `tokens`.
-        Raises:
-            RuntimeError: When OAuth login fails.
-        """
+        # Cloned from parent class
         request_time = utc_now()
         auth_request_payload = self.oauth_request_payload
         token_response = requests.post(self.auth_endpoint, data=auth_request_payload)
@@ -107,5 +101,5 @@ class PodbeanPartitionAuthenticator(PodbeanAuthenticator):
             )
         self.last_refreshed = request_time
 
-        # Podcast auth
+        # Podcast auth for partitioning
         self._tokens = {p['podcast_id']:p['access_token'] for p in token_json['podcasts']}
