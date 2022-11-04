@@ -77,20 +77,20 @@ class _CsvStream(_PodcastPartitionStream):
 
     @property
     def partitions(self) -> List[dict]:
-        podcast_ids = [p for p in self.authenticator.tokens.keys()]
+        def _get_years(start_year) -> List[int]:
+            """List of years for CSV Reports"""
+            current_year = datetime.utcnow().date().year
 
-        start_year = self.start_date.year
-        current_year = datetime.utcnow().date().year
-        years = [current_year]
+            if start_year < current_year:
+                year_rng = range(current_year - start_year + 1)
+                return [start_year + i for i in year_rng]
+        
+            elif start_year > current_year:
+                return [start_year]
 
-        if start_year < current_year:
-            year_rng = range(current_year + 1 - start_year)
-            years = [start_year + y for y in year_rng]
+            return [current_year]
     
-        elif start_year > current_year:
-            years = [start_year]
-    
-        def json_str(podcast_id, year) -> str:
+        def _json_str(podcast_id, year) -> str:
             """Parameters for CSV Reports"""
             part = {
                 'podcast_id': podcast_id,
@@ -99,12 +99,14 @@ class _CsvStream(_PodcastPartitionStream):
             
             return json.dumps(part)
 
-        return [{'partition':json_str(p,y)} for p in podcast_ids for y in years]
+        # Work around for SDK limitation combining both a child context (id) and partition (year)
+        podcast_ids = [id for id in self.authenticator.tokens.keys()]
+        years = _get_years(self.start_date.year)
+        return [{'partition':_json_str(id, year)} for id in podcast_ids for year in years]
 
     def get_url_params(
             self, context: Optional[dict], next_page_token: Optional[int]
         ) -> Dict[str, Any]:
-        """Return a dictionary of values to be used in URL parameterization."""
         parts: dict = json.loads(context.get('partition'))
         podcast_id = parts.get('podcast_id')
         return {
@@ -114,21 +116,21 @@ class _CsvStream(_PodcastPartitionStream):
         }
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
-        """Parse CSVs obtained from urls in the response and return iterator of the CSV records."""
-        def filter_for_stream(val) -> bool:
-            """Reduce excess csv downloads"""
-            pattern = re.compile(r'^\d{4}-\d{1,2}$')
+        def _is_valid_key(val) -> bool:
+            """Only get valid keys and reduce excess CSV downloads"""
+            url_key_pattern = re.compile(r'^\d{4}-\d{1,2}$')
             
-            if pattern.match(val):
+            if url_key_pattern.match(val):
                 report_month = datetime.strptime(val,'%Y-%m').date()
                 start_month = date(self.start_date.year, self.start_date.month, 1)
                 return report_month >= start_month
 
-        def extract_url(val) -> str:
+        def _extract_url(val) -> str:
+            """Flatten list if presented"""
             return val[0] if isinstance(val, list) else val
 
         iter_records = (r for r in extract_jsonpath(self.records_jsonpath, input=response.json()))
-        iter_urls = (extract_url(v) for r in iter_records for k,v in r.items() if filter_for_stream(k) and v)
+        iter_urls = (_extract_url(v) for r in iter_records for k,v in r.items() if _is_valid_key(k) and v)
 
         for url in iter_urls:
             with requests.get(url, stream=True) as response:
@@ -139,11 +141,11 @@ class _CsvStream(_PodcastPartitionStream):
                     yield row
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
-        """Add context to and filter row"""
         record_date_text: str = row.get(self.response_date_key)
-        record_date_text = record_date_text.lstrip("'")  # removes leading excel char
+        record_date_text = record_date_text.lstrip("'")  # Removes leading Excel char if exists
         record_date = datetime.strptime(record_date_text,'%Y-%m-%d %H:%M:%S')
 
+        # Limits records streamed from CSV and adds Podcast ID to beginning of record 
         if record_date >= self.start_date:
             parts: dict = json.loads(context.get('partition'))
             id = parts.get('podcast_id')
@@ -191,7 +193,6 @@ class PodcastAnalyticReportsStream(_PodcastPartitionStream):
         self, context: Optional[dict], next_page_token: Optional[int]
     ) -> Dict[str, Any]:
         podcast_id = context.get('podcast_id')
-        
         return {
             'access_token': self.authenticator.tokens.get(podcast_id),
             'podcast_id': podcast_id,
