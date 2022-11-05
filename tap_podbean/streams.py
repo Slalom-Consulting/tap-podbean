@@ -35,7 +35,7 @@ class PodcastsStream(PodbeanStream):
     schema_filepath = f'{SCHEMAS_DIR}/podcasts.json'
 
 
-class _PodcastPartitionStream(PodbeanStream):
+class _BasePodcastPartitionStream(PodbeanStream):
     """Base class for podcast partitions"""
     @property
     @cached
@@ -43,7 +43,7 @@ class _PodcastPartitionStream(PodbeanStream):
         return PodbeanPartitionAuthenticator(self)
 
 
-class EpisodesStream(_PodcastPartitionStream):
+class EpisodesStream(_BasePodcastPartitionStream):
     name = 'episodes'
     path = '/v1/episodes'
     records_jsonpath = '$.episodes[*]'
@@ -64,8 +64,8 @@ class EpisodesStream(_PodcastPartitionStream):
         return params
 
 
-class _CsvStream(_PodcastPartitionStream):
-    """Class for csv report streams"""
+class _BaseCSVStream(_BasePodcastPartitionStream):
+    """Base class for CSV report streams"""
     primary_keys = [None]
     replication_key = None
     response_date_key = None
@@ -130,10 +130,10 @@ class _CsvStream(_PodcastPartitionStream):
             return val[0] if isinstance(val, list) else val
 
         iter_records = (r for r in extract_jsonpath(self.records_jsonpath, input=response.json()))
-        iter_urls = (_extract_url(v) for r in iter_records for k,v in r.items() if _is_valid_key(k) and v)
+        iter_urls = ([_extract_url(v), k] for r in iter_records for k,v in r.items() if _is_valid_key(k) and v)
 
         with requests.Session() as csv_requests_session:
-            def _read_csv(url: str):
+            def _read_csv(url: str, month: str):
                 """Read CSV using SDK Error Handeling"""
                 @self.request_decorator
                 def _csv_request(prepared_request):
@@ -142,10 +142,20 @@ class _CsvStream(_PodcastPartitionStream):
                 request = requests.Request('GET', url=url)
                 prepared_request = csv_requests_session.prepare_request(request)
                 response = _csv_request(prepared_request)
+
+                self._write_request_duration_log(
+                    endpoint=f'{self.path} (CSV link)',
+                    response=response,
+                    context={'month': month},
+                    extra_tags={"url": prepared_request.path_url}
+                    if self._LOG_REQUEST_METRIC_URLS
+                    else None,
+                )
+
                 file = (line.decode('utf-8-sig') for line in response.iter_lines())
                 return csv.DictReader(file, delimiter=',')
 
-            rows = (row for url in iter_urls for row in _read_csv(url))
+            rows = (row for url in iter_urls for row in _read_csv(url[0], url[1]))
 
             for row in rows:
                 yield row    
@@ -162,14 +172,14 @@ class _CsvStream(_PodcastPartitionStream):
             return {'podcast_id': id, **row}
 
 
-class PodcastDownloadReportsStream(_CsvStream):
+class PodcastDownloadReportsStream(_BaseCSVStream):
     name = 'podcast_download_reports'
     path = '/v1/analytics/podcastReports'
     schema_filepath = f'{SCHEMAS_DIR}/podcast_download_reports.json'
     response_date_key = 'Time(GMT)'
 
 
-class PodcastEngagementReportsStream(_CsvStream):
+class PodcastEngagementReportsStream(_BaseCSVStream):
     name = 'podcast_engagement_reports'
     path = '/v1/analytics/podcastEngagementReports'
     schema_filepath = f'{SCHEMAS_DIR}/podcast_engagement_reports.json'
@@ -190,7 +200,7 @@ class NetworkAnalyticReportsStream(PodbeanStream):
         return {'podcast_id': 'network', **row}
 
 
-class PodcastAnalyticReportsStream(_PodcastPartitionStream):
+class PodcastAnalyticReportsStream(_BasePodcastPartitionStream):
     name = 'podcast_analytic_report'
     path = '/v1/analytics/podcastAnalyticReports'
     schema_filepath = f'{SCHEMAS_DIR}/analytics_reports.json'
