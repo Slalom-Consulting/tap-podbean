@@ -198,7 +198,7 @@ class PodcastEngagementReportsStream(_BaseCSVStream):
 
 class NetworkAnalyticReportsStream(PodbeanStream):
     primary_keys = ['podcast_id']
-    name = 'podcast_analytic_reports'
+    name = 'network_analytic_reports'
     path = '/v1/analytics/podcastAnalyticReports'
     replication_key = None
     schema_filepath = f'{SCHEMAS_DIR}/analytics_reports.json'
