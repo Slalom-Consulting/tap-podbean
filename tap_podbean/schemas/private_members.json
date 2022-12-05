@@ -5,10 +5,10 @@
       "type": ["string", "null"]
     },
     "create_time": {
-      "type": ["string", "null"]
+      "type": ["number", "string", "null"]
     },
     "last_access_time": {
-      "type": ["string", "null"]
+      "type": ["number", "string", "null"]
     },
     "object": {
       "type": ["string", "null"]

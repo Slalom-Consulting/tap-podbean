@@ -27,6 +27,12 @@
     },
     "Country": {
       "type": ["string", "null"]
+    },
+    "Timestamp": {
+      "type": ["string", "null"]
+    },
+    "IP": {
+      "type": ["string", "null"]
     }
   }
 }
