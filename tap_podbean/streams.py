@@ -66,9 +66,7 @@ class EpisodesStream(_BasePodcastPartitionStream):
 
 class _BaseCSVStream(_BasePodcastPartitionStream):
     """Base class for CSV report streams"""
-    primary_keys = [None]
-    replication_key = None
-    response_date_key = None
+    response_date_key = None # configure per stream
     records_jsonpath = '$.download_urls'
 
     @property
@@ -173,22 +171,28 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
 
 
 class PodcastDownloadReportsStream(_BaseCSVStream):
+    primary_keys = ['podcast_id', 'Episode Title', 'User', 'Time(GMT)']
     name = 'podcast_download_reports'
     path = '/v1/analytics/podcastReports'
+    replication_key = None
     schema_filepath = f'{SCHEMAS_DIR}/podcast_download_reports.json'
     response_date_key = 'Time(GMT)'
 
 
 class PodcastEngagementReportsStream(_BaseCSVStream):
+    primary_keys = ['podcast_id', 'Episode Title', 'User ID', 'Time(GMT)']
     name = 'podcast_engagement_reports'
     path = '/v1/analytics/podcastEngagementReports'
+    replication_key = None
     schema_filepath = f'{SCHEMAS_DIR}/podcast_engagement_reports.json'
     response_date_key = 'Time(GMT)'
 
 
 class NetworkAnalyticReportsStream(PodbeanStream):
-    name = 'podcast_analytic_report'
+    primary_keys = ['podcast_id']
+    name = 'podcast_analytic_reports'
     path = '/v1/analytics/podcastAnalyticReports'
+    replication_key = None
     schema_filepath = f'{SCHEMAS_DIR}/analytics_reports.json'
 
     def get_url_params(
@@ -197,12 +201,15 @@ class NetworkAnalyticReportsStream(PodbeanStream):
         return {'types[]': ANALYTIC_REPORT_TYPES}
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
+        # Add Podcast ID to record
         return {'podcast_id': 'network', **row}
 
 
 class PodcastAnalyticReportsStream(_BasePodcastPartitionStream):
-    name = 'podcast_analytic_report'
+    primary_keys = ['podcast_id']
+    name = 'podcast_analytic_reports'
     path = '/v1/analytics/podcastAnalyticReports'
+    replication_key = None
     schema_filepath = f'{SCHEMAS_DIR}/analytics_reports.json'
 
     @property
@@ -220,5 +227,6 @@ class PodcastAnalyticReportsStream(_BasePodcastPartitionStream):
         }
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
+        # Add Podcast ID to record
         id = context.get('podcast_id')
         return {'podcast_id': id, **row}
