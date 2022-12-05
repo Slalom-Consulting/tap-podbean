@@ -7,19 +7,28 @@
     "Time(GMT)": {
       "type": ["string", "null"]
     },
-    "Episode Title":{
+    "Episode Title": {
       "type": ["string", "null"]
     },
-    "User":{
+    "User": {
       "type": ["string", "null"]
     },
-    "State":{
+    "State": {
       "type": ["string", "null"]
     },
-    "Country":{
+    "Country": {
       "type": ["string", "null"]
     },
-    "User Agent":{
+    "User Agent": {
+      "type": ["string", "null"]
+    },
+    "File": {
+      "type": ["string", "null"]
+    },
+    "IP": {
+      "type": ["string", "null"]
+    },
+    "Time": {
       "type": ["string", "null"]
     }
   }
