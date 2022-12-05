@@ -159,15 +159,23 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
                 yield row    
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
-        record_date_text: str = row.get(self.response_date_key)
-        record_date_text = record_date_text.lstrip("'")  # Removes leading Excel char if exists
-        record_date = datetime.strptime(record_date_text,'%Y-%m-%d %H:%M:%S')
+        record_date_text = row.get(self.response_date_key)
 
-        # Limits records streamed from CSV and adds Podcast ID to beginning of record 
-        if record_date >= self.start_date:
-            parts: dict = json.loads(context.get('partition'))
-            id = parts.get('podcast_id')
-            return {'podcast_id': id, **row}
+        if record_date_text:
+            # Clean date key text
+            record_date_text = str(record_date_text).lstrip("'")
+            row[self.response_date_key] = record_date_text
+            
+            # Filter records
+            record_date = datetime.strptime(record_date_text,'%Y-%m-%d %H:%M:%S')
+
+            if record_date < self.start_date:
+                return None
+
+        # Add Podcast ID to record
+        parts: dict = json.loads(context.get('partition'))
+        id = parts.get('podcast_id')
+        return {'podcast_id': id, **row}
 
 
 class PodcastDownloadReportsStream(_BaseCSVStream):
