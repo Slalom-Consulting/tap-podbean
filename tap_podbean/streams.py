@@ -6,12 +6,12 @@ from tap_podbean.client import PodbeanStream
 from memoization import cached
 from pathlib import Path
 from urllib.parse import urlsplit
-from datetime import datetime, date
+from datetime import datetime
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 import csv
 import json
 import requests
-import re
+
 
 SCHEMAS_DIR = Path(__file__).parent / Path('./schemas')
 ANALYTIC_REPORT_TYPES = ['followers', 'likes', 'comments', 'total_episode_length']
@@ -66,9 +66,7 @@ class EpisodesStream(_BasePodcastPartitionStream):
 
 class _BaseCSVStream(_BasePodcastPartitionStream):
     """Base class for CSV report streams"""
-    response_date_key = None # configure per stream
     records_jsonpath = '$.download_urls'
-
     _csv_requests_session = None
 
     @property
@@ -126,21 +124,6 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
             # Add metadata to record
             yield {**row, **attributes, '_file_row_num': i}
 
-#    def _is_valid_key(self, val) -> bool:
-#        """Only get valid keys and reduce excess CSV downloads"""
-#        url_key_pattern = re.compile(r'^\d{4}-\d{1,2}$')
-#        
-#        if url_key_pattern.match(val):
-#            report_month = datetime.strptime(val,'%Y-%m').date()
-#            start_month = date(self.start_date.year, self.start_date.month, 1)
-#            return report_month >= start_month
-#
-#    @staticmethod
-#    def _extract_url(val) -> str:
-#        """Flatten list if presented"""
-#        return val[0] if isinstance(val, list) else val
-
-
     @property
     def start_date(self) -> datetime:
         return datetime.strptime(self.config.get('start_date'), '%Y-%m-%dT%H:%M:%S')
@@ -195,19 +178,6 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
                 yield row
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
-        record_date_text = row.get(self.response_date_key)
-
-#        if record_date_text:
-#            # Clean date key text
-#            record_date_text = str(record_date_text).lstrip("'")
-#            row[self.response_date_key] = record_date_text
-#            
-#            # Filter records
-#            record_date = datetime.strptime(record_date_text,'%Y-%m-%d %H:%M:%S')
-#
-#            if record_date < self.start_date:
-#                return None
-
         # Add Podcast ID to record
         parts: dict = json.loads(context.get('partition'))
         id: str = parts.get('podcast_id')
@@ -220,7 +190,6 @@ class PodcastDownloadReportsStream(_BaseCSVStream):
     path = '/v1/analytics/podcastReports'
     replication_key = None
     schema_filepath = f'{SCHEMAS_DIR}/podcast_download_reports.json'
-    #response_date_key = 'Time(GMT)'
 
 
 class PodcastEngagementReportsStream(_BaseCSVStream):
@@ -229,7 +198,6 @@ class PodcastEngagementReportsStream(_BaseCSVStream):
     path = '/v1/analytics/podcastEngagementReports'
     replication_key = None
     schema_filepath = f'{SCHEMAS_DIR}/podcast_engagement_reports.json'
-    #response_date_key = 'Time(GMT)'
 
 
 class NetworkAnalyticReportsStream(PodbeanStream):
