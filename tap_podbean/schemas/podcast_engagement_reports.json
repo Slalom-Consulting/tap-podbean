@@ -34,13 +34,10 @@
     "IP": {
       "type": ["string", "null"]
     },
-    "_file_link_key": {
+    "_file_url_key": {
       "type": ["string", "null"]
     },
     "_file_row_num": {
-      "type": ["string", "null"]
-    },
-    "_file_name": {
       "type": ["string", "null"]
     },
     "_file_last_modified_at": {

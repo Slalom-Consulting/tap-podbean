@@ -81,16 +81,12 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
         )
 
     @staticmethod
-    def _csv_file_name(url: str) -> str:
-        return urlsplit(url).path.split('/')[-1]
-
-    @staticmethod
     def _csv_timstamp(val: str) -> datetime:
         # Wed, 04 Jan 2023 04:49:49 GMT
         response_date_format = '%a, %d %b %Y %H:%M:%S %Z'
         return datetime.strptime(val, response_date_format)
 
-    def _csv_response(self, url: str) -> requests.Response:
+    def _csv_response(self, url: str, *args, **kwargs) -> requests.Response:
         request = requests.Request('GET', url=url)
         prepared_request = self.csv_requests_session.prepare_request(request)
         decorated_request = self.request_decorator(self._csv_request)
@@ -100,10 +96,21 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
         if last_modified_at < self.start_date:
             return
 
+        url_key_path = kwargs.get('url_key_path')
+        
+        parent_partition = json.loads(
+            self.stream_state.get('partitions')[0].get('context').get('partition')
+        )
+
         self._write_request_duration_log(
             endpoint=self.path,
             response=response,
-            context={'file_name': self._csv_file_name(url)},
+            context={
+                'podcast_id': parent_partition.get('podcast_id'),
+                'year': parent_partition.get('year'),
+                'csv_stream': True,
+                'record_json_path': f'{self.records_jsonpath}.{url_key_path}',
+            },
             extra_tags={"url": url}
             if self._LOG_REQUEST_METRIC_URLS
             else None,
@@ -111,9 +118,9 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
 
         return response
 
-    def _csv_read_lines(self, url: str) -> Iterable(dict):
+    def _csv_read_lines(self, url: str, *args, **kwargs) -> Iterable(dict):
         """Read CSV using SDK Error Handeling"""
-        response = self._csv_response(url)
+        response = self._csv_response(url, *args, **kwargs)
         decoded_file = (line.decode('utf-8-sig') for line in response.iter_lines())
         reader = csv.DictReader(decoded_file, delimiter=',')
 
@@ -177,23 +184,26 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
                 'urls': [
                     url for url in ([v] if not isinstance(v, list) else v)
                     if urlsplit(url)[0]
-                ]
+                ],
+                'modified': True if v and not isinstance(v, list) else False
             }
             for k, v in records.items() if v
         ]
 
         for record in url_list:
-            record_month = record.get('month')
+            url_key = record.get('month')
 
             for i, url in enumerate(record.get('urls')):
-                file_link_key = f'{record_month}_{i}'
-                file_name = self._csv_file_name(url)
+                modified = record.get('modified')
+                record_path = f'{url_key}[{i}]' if modified else url_key
 
-                for row, row_num, response in self._csv_read_lines(url):
+                for row, row_num, response in self._csv_read_lines(
+                    url,
+                    url_key_path=record_path
+                ):
                     metadata = {
-                        '_file_link_key': file_link_key,
+                        '_file_url_key': record_path,
                         '_file_row_num': row_num,
-                        '_file_name': file_name,
                         '_file_last_modified_at': response.headers.get('Last-Modified'),
                     }
                     
