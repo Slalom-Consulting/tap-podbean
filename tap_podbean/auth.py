@@ -19,18 +19,20 @@ class PodbeanAuthenticator(OAuthAuthenticator):
             self, stream: RESTStream,
             podcast_id: Optional[str] = None,
             default_expiration: Optional[int] = None
-        ) -> None:
+    ) -> None:
         """Create a new authenticator.
         Args:
             stream: The stream instance to use with this authenticator.
-            podcast_id: [Optional] Return auth for a specific podcast. If None uses api default.
-            default_expiration: [Optional] Default token expiry in seconds. If None uses api default.
+            podcast_id: [Optional] Return auth for a specific podcast. If None uses api
+                default.
+            default_expiration: [Optional] Default token expiry in seconds. If None uses
+                api default.
         """
         expiration = default_expiration or stream.config.get('auth_expiration')
         super().__init__(stream=stream, default_expiration=expiration)
         self.url_base = stream.url_base
         self.podcast_id = podcast_id
-    
+
     auth_type = APIAuthType['default'].value
 
     @property
@@ -56,7 +58,7 @@ class PodbeanAuthenticator(OAuthAuthenticator):
     def auth_params(self) -> dict:
         if not self.is_token_valid():
             self.update_access_token()
-        
+
         return {'access_token': self.access_token}
 
 
@@ -102,4 +104,6 @@ class PodbeanPartitionAuthenticator(PodbeanAuthenticator):
         self.last_refreshed = request_time
 
         # Podcast auth for partitioning
-        self._tokens = {p['podcast_id']:p['access_token'] for p in token_json['podcasts']}
+        self._tokens = {
+            p['podcast_id']: p['access_token'] for p in token_json['podcasts']
+        }

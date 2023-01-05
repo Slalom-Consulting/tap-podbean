@@ -20,5 +20,5 @@ class PodbeanPaginator(BaseOffsetPaginator):
         super().__init__(start_value, page_size, *args, **kwargs)
 
     def has_more(self, response: Response) -> bool:
-        has_more:bool = response.json().get('has_more', False)
-        return has_more == True
+        has_more: bool = response.json().get('has_more', False)
+        return has_more

@@ -5,7 +5,6 @@ from singer_sdk import Tap, Stream
 from singer_sdk import typing as th
 
 from tap_podbean.streams import (
-#    PodbeanStream,
     PrivateMembersStream,
     PodcastsStream,
     EpisodesStream,
@@ -22,7 +21,7 @@ STREAM_TYPES = [
     PodcastDownloadReportsStream,
     PodcastEngagementReportsStream,
     NetworkAnalyticReportsStream,
-    PodcastAnalyticReportsStream, 
+    PodcastAnalyticReportsStream,
 ]
 
 
@@ -34,43 +33,43 @@ class TapPodbean(Tap):
         th.Property(
             'client_id',
             th.StringType,
-            required = True,
-            description = 'The client identifier to authenticate against the API service.'
+            required=True,
+            description='The client identifier to authenticate against the API service.'
         ),
         th.Property(
             'client_secret',
             th.StringType,
-            required = True,
-            secret = True,
-            description = 'The client secret to authenticate against the API service.'
+            required=True,
+            secret=True,
+            description='The client secret to authenticate against the API service.'
         ),
         th.Property(
             'start_date',
             th.DateTimeType,
-            required = True,
-            description = 'The earliest datetime (UTC) to sync records.'
+            required=True,
+            description='The earliest datetime (UTC) to sync records.'
         ),
         th.Property(
             'auth_expiration',
             th.IntegerType,
-            default = 300,
-            description = 'Expiraton in seconds for auth. (Range: 60-604800)'
+            default=300,
+            description='Expiraton in seconds for auth. (Range: 60-604800)'
         ),
         th.Property(
             'limit',
             th.IntegerType,
-            default = 100,
-            description = 'The number of records to return per page. (Range: 0-100)'
+            default=100,
+            description='The number of records to return per page. (Range: 0-100)'
         ),
         th.Property(
             "user_agent",
             th.StringType,
-            description = 'User agent to present to the API.'
+            description='User agent to present to the API.'
         ),
         th.Property(
             'api_url',
             th.StringType,
-            description = 'Override the API service base URL.'
+            description='Override the API service base URL.'
         ),
     ).to_dict()
 
