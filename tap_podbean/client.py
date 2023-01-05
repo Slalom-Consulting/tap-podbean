@@ -27,7 +27,7 @@ class PodbeanStream(RESTStream):
 
     def get_url_params(
             self, context: Optional[dict], next_page_token: Optional[dict]
-        ) -> Dict[str, Any]:
+    ) -> Dict[str, Any]:
         return {
             'offset': next_page_token or PAGINATION_INDEX,
             'limit': self.config.get('limit')

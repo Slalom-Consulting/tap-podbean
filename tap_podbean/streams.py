@@ -53,11 +53,11 @@ class EpisodesStream(_BasePodcastPartitionStream):
 
     @property
     def partitions(self) -> List[dict]:
-        return [{'podcast_id':k} for k in self.authenticator.tokens.keys()]
+        return [{'podcast_id': k} for k in self.authenticator.tokens.keys()]
 
     def get_url_params(
             self, context: Optional[dict], next_page_token: Optional[int]
-        ) -> Dict[str, Any]:
+    ) -> Dict[str, Any]:
         params = super().get_url_params(context, next_page_token)
         podcast_id = context.get('podcast_id')
         params['access_token'] = self.authenticator.tokens.get(podcast_id)
@@ -76,7 +76,9 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
         return self._csv_requests_session
 
     def _csv_request(self, prepared_request) -> requests.Response:
-        return self._csv_requests_session.send(prepared_request, stream=True, timeout=self.timeout)
+        return self._csv_requests_session.send(
+            prepared_request, stream=True, timeout=self.timeout
+        )
 
     @staticmethod
     def _csv_file_name(url: str) -> str:
@@ -84,17 +86,18 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
 
     @staticmethod
     def _csv_timstamp(val: str) -> datetime:
-        response_date_format = '%a, %d %b %Y %H:%M:%S %Z'  # Wed, 04 Jan 2023 04:49:49 GMT
+        # Wed, 04 Jan 2023 04:49:49 GMT
+        response_date_format = '%a, %d %b %Y %H:%M:%S %Z'
         return datetime.strptime(val, response_date_format)
 
     def _csv_response(self, url: str) -> requests.Response:
         request = requests.Request('GET', url=url)
         prepared_request = self.csv_requests_session.prepare_request(request)
         decorated_request = self.request_decorator(self._csv_request)
-        response:requests.Response = decorated_request(prepared_request)
-        file_last_modified_at = self._csv_timstamp(response.headers.get('Last-Modified'))
-        
-        if file_last_modified_at < self.start_date:
+        response: requests.Response = decorated_request(prepared_request)
+        last_modified_at = self._csv_timstamp(response.headers.get('Last-Modified'))
+
+        if last_modified_at < self.start_date:
             return
 
         self._write_request_duration_log(
@@ -111,10 +114,12 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
     def _csv_read_lines(self, url: str) -> Iterable(dict):
         """Read CSV using SDK Error Handeling"""
         response = self._csv_response(url)
-        
+
         attributes = {
             '_file_name': self._csv_file_name(url),
-            '_file_last_modified_at': str(self._csv_timstamp(response.headers.get('Last-Modified'))),
+            '_file_last_modified_at': str(
+                self._csv_timstamp(response.headers.get('Last-Modified'))
+            ),
         }
 
         decoded_file = (line.decode('utf-8-sig') for line in response.iter_lines())
@@ -137,29 +142,33 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
             if start_year < current_year:
                 year_rng = range(current_year - start_year + 1)
                 return [start_year + i for i in year_rng]
-        
+
             elif start_year > current_year:
                 return [start_year]
 
             return [current_year]
-    
+
         def _json_str(podcast_id, year) -> str:
             """Parameters for CSV Reports"""
             part = {
                 'podcast_id': podcast_id,
                 'year': year
             }
-            
+
             return json.dumps(part)
 
-        # Work around for SDK limitation combining both a child context (id) and partition (year)
+        # Work around for SDK limitation combining both a child context (id) and
+        # partition (year)
         podcast_ids = [id for id in self.authenticator.tokens.keys()]
         years = _get_years(self.start_date.year)
-        return [{'partition':_json_str(id, year)} for id in podcast_ids for year in years]
+
+        return [
+            {'partition': _json_str(id, year)} for id in podcast_ids for year in years
+        ]
 
     def get_url_params(
             self, context: Optional[dict], next_page_token: Optional[int]
-        ) -> Dict[str, Any]:
+    ) -> Dict[str, Any]:
         parts: dict = json.loads(context.get('partition'))
         podcast_id = parts.get('podcast_id')
         return {
@@ -170,8 +179,12 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
         records = next(extract_jsonpath(self.records_jsonpath, input=response.json()))
-        urls_list = ([v] if not isinstance(v, list) else v for v in records.values() if v)
-        urls = (url for l in urls_list for url in l if urlsplit(url)[0])
+
+        urls_list = (
+            [v] if not isinstance(v, list) else v for v in records.values() if v
+        )
+
+        urls = (url for lst in urls_list for url in lst if urlsplit(url)[0])
 
         for url in urls:
             for row in self._csv_read_lines(url):
@@ -209,7 +222,7 @@ class NetworkAnalyticReportsStream(PodbeanStream):
 
     def get_url_params(
             self, context: Optional[dict], next_page_token: Optional[int]
-        ) -> dict:
+    ) -> dict:
         return {'types[]': ANALYTIC_REPORT_TYPES}
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
@@ -226,7 +239,7 @@ class PodcastAnalyticReportsStream(_BasePodcastPartitionStream):
 
     @property
     def partitions(self) -> List[dict]:
-        return [{'podcast_id':k} for k in self.authenticator.tokens.keys()]
+        return [{'podcast_id': k} for k in self.authenticator.tokens.keys()]
 
     def get_url_params(
         self, context: Optional[dict], next_page_token: Optional[int]
