@@ -70,59 +70,75 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
     records_jsonpath = '$.download_urls'
 
     _csv_requests_session = None
+
     @property
     def csv_requests_session(self) -> requests.Session:
         if not self._csv_requests_session:
             self._csv_requests_session = requests.Session()
         return self._csv_requests_session
 
-    def _csv_request(self, prepared_request):
+    def _csv_request(self, prepared_request) -> requests.Response:
         return self._csv_requests_session.send(prepared_request, stream=True, timeout=self.timeout)
+
+    @staticmethod
+    def _csv_file_name(url: str) -> str:
+        return urlsplit(url).path.split('/')[-1]
+
+    @staticmethod
+    def _csv_timstamp(val: str) -> datetime:
+        response_date_format = '%a, %d %b %Y %H:%M:%S %Z'  # Wed, 04 Jan 2023 04:49:49 GMT
+        return datetime.strptime(val, response_date_format)
 
     def _csv_response(self, url: str) -> requests.Response:
         request = requests.Request('GET', url=url)
         prepared_request = self.csv_requests_session.prepare_request(request)
         decorated_request = self.request_decorator(self._csv_request)
-        response = decorated_request(prepared_request)
-        return response
-
-    def _csv_read_lines(self, url: str) -> dict:
-        """Read CSV using SDK Error Handeling"""
-        response = self._csv_response(url)
-        file_name = urlsplit(url).path.split('/')[-1]
+        response:requests.Response = decorated_request(prepared_request)
+        file_last_modified_at = self._csv_timstamp(response.headers.get('Last-Modified'))
+        
+        if file_last_modified_at < self.start_date:
+            return
 
         self._write_request_duration_log(
             endpoint=self.path,
             response=response,
-            context={'file_name': file_name},
+            context={'file_name': self._csv_file_name(url)},
             extra_tags={"url": url}
             if self._LOG_REQUEST_METRIC_URLS
             else None,
         )
 
+        return response
+
+    def _csv_read_lines(self, url: str) -> Iterable(dict):
+        """Read CSV using SDK Error Handeling"""
+        response = self._csv_response(url)
+        
         attributes = {
-            'file_name': file_name,
-            'file_last_modified_at': response.headers.get('Last-Modified'),
+            '_file_name': self._csv_file_name(url),
+            '_file_last_modified_at': str(self._csv_timstamp(response.headers.get('Last-Modified'))),
         }
 
         decoded_file = (line.decode('utf-8-sig') for line in response.iter_lines())
         reader = csv.DictReader(decoded_file, delimiter=',')
-        for row in reader:
-            yield {**attributes, **row}
 
-    def _is_valid_key(self, val) -> bool:
-        """Only get valid keys and reduce excess CSV downloads"""
-        url_key_pattern = re.compile(r'^\d{4}-\d{1,2}$')
-        
-        if url_key_pattern.match(val):
-            report_month = datetime.strptime(val,'%Y-%m').date()
-            start_month = date(self.start_date.year, self.start_date.month, 1)
-            return report_month >= start_month
+        for i, row in enumerate(reader):
+            # Add metadata to record
+            yield {**row, **attributes, '_file_row_num': i}
 
-    @staticmethod
-    def _extract_url(val) -> str:
-        """Flatten list if presented"""
-        return val[0] if isinstance(val, list) else val
+#    def _is_valid_key(self, val) -> bool:
+#        """Only get valid keys and reduce excess CSV downloads"""
+#        url_key_pattern = re.compile(r'^\d{4}-\d{1,2}$')
+#        
+#        if url_key_pattern.match(val):
+#            report_month = datetime.strptime(val,'%Y-%m').date()
+#            start_month = date(self.start_date.year, self.start_date.month, 1)
+#            return report_month >= start_month
+#
+#    @staticmethod
+#    def _extract_url(val) -> str:
+#        """Flatten list if presented"""
+#        return val[0] if isinstance(val, list) else val
 
 
     @property
@@ -170,50 +186,50 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
         }
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
-        iter_records = (r for r in extract_jsonpath(self.records_jsonpath, input=response.json()))
-        iter_urls = (self._extract_url(v) for r in iter_records for k,v in r.items() if self._is_valid_key(k) and v)
+        records = next(extract_jsonpath(self.records_jsonpath, input=response.json()))
+        urls_list = ([v] if not isinstance(v, list) else v for v in records.values() if v)
+        urls = (url for l in urls_list for url in l if urlsplit(url)[0])
 
-        rows = (row for url in iter_urls for row in self._csv_read_lines(url))
-
-        for row in rows:
-            yield row    
+        for url in urls:
+            for row in self._csv_read_lines(url):
+                yield row
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
         record_date_text = row.get(self.response_date_key)
 
-        if record_date_text:
-            # Clean date key text
-            record_date_text = str(record_date_text).lstrip("'")
-            row[self.response_date_key] = record_date_text
-            
-            # Filter records
-            record_date = datetime.strptime(record_date_text,'%Y-%m-%d %H:%M:%S')
-
-            if record_date < self.start_date:
-                return None
+#        if record_date_text:
+#            # Clean date key text
+#            record_date_text = str(record_date_text).lstrip("'")
+#            row[self.response_date_key] = record_date_text
+#            
+#            # Filter records
+#            record_date = datetime.strptime(record_date_text,'%Y-%m-%d %H:%M:%S')
+#
+#            if record_date < self.start_date:
+#                return None
 
         # Add Podcast ID to record
         parts: dict = json.loads(context.get('partition'))
-        id = parts.get('podcast_id')
+        id: str = parts.get('podcast_id')
         return {'podcast_id': id, **row}
 
 
 class PodcastDownloadReportsStream(_BaseCSVStream):
-    primary_keys = ['podcast_id', 'Episode Title', 'User', 'Time(GMT)']
+    primary_keys = ['podcast_id', '_file_name', '_file_row_num']
     name = 'podcast_download_reports'
     path = '/v1/analytics/podcastReports'
     replication_key = None
     schema_filepath = f'{SCHEMAS_DIR}/podcast_download_reports.json'
-    response_date_key = 'Time(GMT)'
+    #response_date_key = 'Time(GMT)'
 
 
 class PodcastEngagementReportsStream(_BaseCSVStream):
-    primary_keys = ['podcast_id', 'Episode Title', 'User ID', 'Time(GMT)']
+    primary_keys = ['podcast_id', '_file_name', '_file_row_num']
     name = 'podcast_engagement_reports'
     path = '/v1/analytics/podcastEngagementReports'
     replication_key = None
     schema_filepath = f'{SCHEMAS_DIR}/podcast_engagement_reports.json'
-    response_date_key = 'Time(GMT)'
+    #response_date_key = 'Time(GMT)'
 
 
 class NetworkAnalyticReportsStream(PodbeanStream):
