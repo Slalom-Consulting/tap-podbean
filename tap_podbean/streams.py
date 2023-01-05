@@ -114,20 +114,11 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
     def _csv_read_lines(self, url: str) -> Iterable(dict):
         """Read CSV using SDK Error Handeling"""
         response = self._csv_response(url)
-
-        attributes = {
-            '_file_name': self._csv_file_name(url),
-            '_file_last_modified_at': str(
-                self._csv_timstamp(response.headers.get('Last-Modified'))
-            ),
-        }
-
         decoded_file = (line.decode('utf-8-sig') for line in response.iter_lines())
         reader = csv.DictReader(decoded_file, delimiter=',')
 
         for i, row in enumerate(reader):
-            # Add metadata to record
-            yield {**row, **attributes, '_file_row_num': i}
+            yield row, i, response
 
     @property
     def start_date(self) -> datetime:
@@ -180,15 +171,33 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
         records = next(extract_jsonpath(self.records_jsonpath, input=response.json()))
 
-        urls_list = (
-            [v] if not isinstance(v, list) else v for v in records.values() if v
-        )
+        url_list = [
+            {
+                'month': k,
+                'urls': [
+                    url for url in ([v] if not isinstance(v, list) else v)
+                    if urlsplit(url)[0]
+                ]
+            }
+            for k, v in records.items() if v
+        ]
 
-        urls = (url for lst in urls_list for url in lst if urlsplit(url)[0])
+        for record in url_list:
+            record_month = record.get('month')
 
-        for url in urls:
-            for row in self._csv_read_lines(url):
-                yield row
+            for i, url in enumerate(record.get('urls')):
+                file_link_key = f'{record_month}_{i}'
+                file_name = self._csv_file_name(url)
+
+                for row, row_num, response in self._csv_read_lines(url):
+                    metadata = {
+                        '_file_link_key': file_link_key,
+                        '_file_row_num': row_num,
+                        '_file_name': file_name,
+                        '_file_last_modified_at': response.headers.get('Last-Modified'),
+                    }
+                    
+                    yield {**row, **metadata}
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
         # Add Podcast ID to record
@@ -198,7 +207,7 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
 
 
 class PodcastDownloadReportsStream(_BaseCSVStream):
-    primary_keys = ['podcast_id', '_file_name', '_file_row_num']
+    primary_keys = ['podcast_id', '_file_link_key', '_file_row_num']
     name = 'podcast_download_reports'
     path = '/v1/analytics/podcastReports'
     replication_key = None
@@ -206,7 +215,7 @@ class PodcastDownloadReportsStream(_BaseCSVStream):
 
 
 class PodcastEngagementReportsStream(_BaseCSVStream):
-    primary_keys = ['podcast_id', '_file_name', '_file_row_num']
+    primary_keys = ['podcast_id', '_file_link_key', '_file_row_num']
     name = 'podcast_engagement_reports'
     path = '/v1/analytics/podcastEngagementReports'
     replication_key = None
