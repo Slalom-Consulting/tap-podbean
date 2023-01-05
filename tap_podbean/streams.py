@@ -97,7 +97,7 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
             return
 
         url_key_path = kwargs.get('url_key_path')
-        
+
         parent_partition = json.loads(
             self.stream_state.get('partitions')[0].get('context').get('partition')
         )
@@ -206,7 +206,7 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
                         '_file_row_num': row_num,
                         '_file_last_modified_at': response.headers.get('Last-Modified'),
                     }
-                    
+
                     yield {**row, **metadata}
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
