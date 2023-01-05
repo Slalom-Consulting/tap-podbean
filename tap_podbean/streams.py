@@ -1,11 +1,11 @@
 """Stream type classes for tap-podbean."""
-
+from __future__ import annotations
 from typing import Any, Dict, Optional, List, Iterable
 from tap_podbean.auth import PodbeanPartitionAuthenticator
 from tap_podbean.client import PodbeanStream
 from memoization import cached
 from pathlib import Path
-
+from urllib.parse import urlsplit
 from datetime import datetime, date
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 import csv
@@ -69,6 +69,62 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
     response_date_key = None # configure per stream
     records_jsonpath = '$.download_urls'
 
+    _csv_requests_session = None
+    @property
+    def csv_requests_session(self) -> requests.Session:
+        if not self._csv_requests_session:
+            self._csv_requests_session = requests.Session()
+        return self._csv_requests_session
+
+    def _csv_request(self, prepared_request):
+        return self._csv_requests_session.send(prepared_request, stream=True, timeout=self.timeout)
+
+    def _csv_response(self, url: str) -> requests.Response:
+        request = requests.Request('GET', url=url)
+        prepared_request = self.csv_requests_session.prepare_request(request)
+        decorated_request = self.request_decorator(self._csv_request)
+        response = decorated_request(prepared_request)
+        return response
+
+    def _csv_read_lines(self, url: str) -> dict:
+        """Read CSV using SDK Error Handeling"""
+        response = self._csv_response(url)
+        file_name = urlsplit(url).path.split('/')[-1]
+
+        self._write_request_duration_log(
+            endpoint=self.path,
+            response=response,
+            context={'file_name': file_name},
+            extra_tags={"url": url}
+            if self._LOG_REQUEST_METRIC_URLS
+            else None,
+        )
+
+        attributes = {
+            'file_name': file_name,
+            'file_last_modified_at': response.headers.get('Last-Modified'),
+        }
+
+        decoded_file = (line.decode('utf-8-sig') for line in response.iter_lines())
+        reader = csv.DictReader(decoded_file, delimiter=',')
+        for row in reader:
+            yield {**attributes, **row}
+
+    def _is_valid_key(self, val) -> bool:
+        """Only get valid keys and reduce excess CSV downloads"""
+        url_key_pattern = re.compile(r'^\d{4}-\d{1,2}$')
+        
+        if url_key_pattern.match(val):
+            report_month = datetime.strptime(val,'%Y-%m').date()
+            start_month = date(self.start_date.year, self.start_date.month, 1)
+            return report_month >= start_month
+
+    @staticmethod
+    def _extract_url(val) -> str:
+        """Flatten list if presented"""
+        return val[0] if isinstance(val, list) else val
+
+
     @property
     def start_date(self) -> datetime:
         return datetime.strptime(self.config.get('start_date'), '%Y-%m-%dT%H:%M:%S')
@@ -114,49 +170,13 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
         }
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
-        def _is_valid_key(val) -> bool:
-            """Only get valid keys and reduce excess CSV downloads"""
-            url_key_pattern = re.compile(r'^\d{4}-\d{1,2}$')
-            
-            if url_key_pattern.match(val):
-                report_month = datetime.strptime(val,'%Y-%m').date()
-                start_month = date(self.start_date.year, self.start_date.month, 1)
-                return report_month >= start_month
-
-        def _extract_url(val) -> str:
-            """Flatten list if presented"""
-            return val[0] if isinstance(val, list) else val
-
         iter_records = (r for r in extract_jsonpath(self.records_jsonpath, input=response.json()))
-        iter_urls = ([_extract_url(v), k] for r in iter_records for k,v in r.items() if _is_valid_key(k) and v)
+        iter_urls = (self._extract_url(v) for r in iter_records for k,v in r.items() if self._is_valid_key(k) and v)
 
-        with requests.Session() as csv_requests_session:
-            def _read_csv(url: str, month: str):
-                """Read CSV using SDK Error Handeling"""
-                @self.request_decorator
-                def _csv_request(prepared_request):
-                    return csv_requests_session.send(prepared_request, stream=True, timeout=self.timeout)
+        rows = (row for url in iter_urls for row in self._csv_read_lines(url))
 
-                request = requests.Request('GET', url=url)
-                prepared_request = csv_requests_session.prepare_request(request)
-                response = _csv_request(prepared_request)
-
-                self._write_request_duration_log(
-                    endpoint=f'{self.path} (CSV link)',
-                    response=response,
-                    context={'month': month},
-                    extra_tags={"url": prepared_request.path_url}
-                    if self._LOG_REQUEST_METRIC_URLS
-                    else None,
-                )
-
-                file = (line.decode('utf-8-sig') for line in response.iter_lines())
-                return csv.DictReader(file, delimiter=',')
-
-            rows = (row for url in iter_urls for row in _read_csv(url[0], url[1]))
-
-            for row in rows:
-                yield row    
+        for row in rows:
+            yield row    
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
         record_date_text = row.get(self.response_date_key)
