@@ -14,7 +14,7 @@
       "type": ["string"]
     },
     "file_last_modified_at": {
-      "type": ["string"]
+      "type": ["string", "null"]
     }
   }
 }
