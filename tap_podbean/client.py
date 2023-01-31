@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, Optional
 
-from memoization import cached
+# from memoization import cached
 from singer_sdk.streams import RESTStream
 
 from tap_podbean.auth import PodbeanAuthenticator
@@ -20,12 +20,13 @@ class PodbeanStream(RESTStream):
         return self.config.get("api_url", API_URL)
 
     @property
-    @cached
+    # @cached
     def authenticator(self) -> PodbeanAuthenticator:
         return PodbeanAuthenticator(self)
 
     def get_new_paginator(self) -> PodbeanPaginator:
-        page_size = self.config.get("limit")
+        limit = self.config.get("limit")
+        page_size = int(limit) if limit else None
         return PodbeanPaginator(PAGINATION_INDEX, page_size)
 
     def get_url_params(

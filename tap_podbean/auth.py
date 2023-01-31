@@ -70,7 +70,7 @@ class PodbeanAuthenticator(OAuthAuthenticator):
 class PodbeanPartitionAuthenticator(PodbeanAuthenticator):
     """Authenticator with auth tokens for each podcast."""
 
-    _tokens = None
+    _tokens: dict = {}
 
     auth_type = APIAuthType["multi"].value
 
