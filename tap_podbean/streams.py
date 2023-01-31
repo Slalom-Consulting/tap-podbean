@@ -15,7 +15,6 @@ from singer_sdk.helpers.jsonpath import extract_jsonpath
 from tap_podbean.auth import PodbeanPartitionAuthenticator
 from tap_podbean.client import PodbeanStream
 
-
 SCHEMAS_DIR = Path(__file__).parent / Path("./schemas")
 ANALYTIC_REPORT_TYPES = ["followers", "likes", "comments", "total_episode_length"]
 
@@ -121,14 +120,14 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
 
         return response
 
-    def _csv_read_lines(self, url: str, *args, **kwargs) -> Iterable(dict):
+    def _csv_records(self, url: str, *args, **kwargs) -> Iterable(dict):
         """Read CSV using SDK Error Handeling"""
         response = self._csv_response(url, *args, **kwargs)
         decoded_file = (line.decode("utf-8-sig") for line in response.iter_lines())
         reader = csv.DictReader(decoded_file, delimiter=",")
 
-        for i, row in enumerate(reader):
-            yield row, i, response
+        for record_num, record in enumerate(reader):
+            yield record, record_num, response
 
     @property
     def start_date(self) -> datetime:
@@ -176,39 +175,31 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
         }
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
-        records = next(extract_jsonpath(self.records_jsonpath, input=response.json()))
+        records: dict = next(
+            extract_jsonpath(self.records_jsonpath, input=response.json())
+        )
 
-        url_list = [
-            {
-                "month": k,
-                "urls": [
-                    url
-                    for url in ([v] if not isinstance(v, list) else v)
-                    if urlsplit(url)[0]
-                ],
-                "modified": True if v and not isinstance(v, list) else False,
-            }
-            for k, v in records.items()
-            if v
-        ]
+        for month, vals in records.items():
+            if not vals:
+                continue
 
-        for record in url_list:
-            url_key = record.get("month")
+            vals = vals if isinstance(vals, list) else [vals]
 
-            for i, url in enumerate(record.get("urls")):
-                modified = record.get("modified")
-                record_path = f"{url_key}[{i}]" if modified else url_key
+            for i, url in enumerate(vals):
+                if not urlsplit(str(url))[0] in ("https", "http"):
+                    continue
 
-                for row, row_num, response in self._csv_read_lines(
-                    url, url_key_path=record_path
-                ):
-                    metadata = {
-                        "_file_url_key": record_path,
-                        "_file_row_num": row_num,
-                        "_file_last_modified_at": response.headers.get("Last-Modified"),
+                file_key = f"{month}_{i}"
+
+                for csv_record, csv_record_num, csv_response in self._csv_records(url):
+                    last_modified = csv_response.headers.get("Last-Modified")
+
+                    yield {
+                        "file_key": file_key,
+                        "record_key": csv_record_num,
+                        "record_val": csv_record,
+                        "file_last_modified_at": last_modified,
                     }
-
-                    yield {**row, **metadata}
 
     def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
         # Add Podcast ID to record
@@ -218,19 +209,19 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
 
 
 class PodcastDownloadReportsStream(_BaseCSVStream):
-    primary_keys = ["podcast_id", "_file_link_key", "_file_row_num"]
+    primary_keys = ["podcast_id", "file_key", "record_key"]
     name = "podcast_download_reports"
     path = "/v1/analytics/podcastReports"
     replication_key = None
-    schema_filepath = f"{SCHEMAS_DIR}/podcast_download_reports.json"
+    schema_filepath = f"{SCHEMAS_DIR}/csv_reports.json"
 
 
 class PodcastEngagementReportsStream(_BaseCSVStream):
-    primary_keys = ["podcast_id", "_file_link_key", "_file_row_num"]
+    primary_keys = ["podcast_id", "file_key", "record_key"]
     name = "podcast_engagement_reports"
     path = "/v1/analytics/podcastEngagementReports"
     replication_key = None
-    schema_filepath = f"{SCHEMAS_DIR}/podcast_engagement_reports.json"
+    schema_filepath = f"{SCHEMAS_DIR}/csv_reports.json"
 
 
 class NetworkAnalyticReportsStream(PodbeanStream):

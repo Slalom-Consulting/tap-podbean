@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "podcast_id": {
+      "type": ["string"]
+    },
+    "file_key": {
+      "type": ["string"]
+    },
+    "record_key": {
+      "type": ["string"]
+    },
+    "record_val": {
+      "type": ["string"]
+    },
+    "file_last_modified_at": {
+      "type": ["string"]
+    }
+  }
+}
