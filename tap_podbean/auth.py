@@ -1,24 +1,26 @@
 """Auth handling for PodbeanStream."""
 
-from typing import Optional
-from singer_sdk.authenticators import OAuthAuthenticator
-from singer_sdk.streams import RESTStream
-from singer_sdk.helpers._util import utc_now
-from urllib.parse import urljoin
 from enum import Enum
+from typing import Optional
+from urllib.parse import urljoin
+
 import requests
+from singer_sdk.authenticators import OAuthAuthenticator
+from singer_sdk.helpers._util import utc_now
+from singer_sdk.streams import RESTStream
 
 
 class APIAuthType(str, Enum):
-    default = '/v1/oauth/token'
-    multi = '/v1/oauth/multiplePodcastsToken'
+    default = "/v1/oauth/token"
+    multi = "/v1/oauth/multiplePodcastsToken"
 
 
 class PodbeanAuthenticator(OAuthAuthenticator):
     def __init__(
-            self, stream: RESTStream,
-            podcast_id: Optional[str] = None,
-            default_expiration: Optional[int] = None
+        self,
+        stream: RESTStream,
+        podcast_id: Optional[str] = None,
+        default_expiration: Optional[int] = None,
     ) -> None:
         """Create a new authenticator.
         Args:
@@ -28,12 +30,12 @@ class PodbeanAuthenticator(OAuthAuthenticator):
             default_expiration: [Optional] Default token expiry in seconds. If None uses
                 api default.
         """
-        expiration = default_expiration or stream.config.get('auth_expiration')
+        expiration = default_expiration or stream.config.get("auth_expiration")
         super().__init__(stream=stream, default_expiration=expiration)
         self.url_base = stream.url_base
         self.podcast_id = podcast_id
 
-    auth_type = APIAuthType['default'].value
+    auth_type = APIAuthType["default"].value
 
     @property
     def auth_headers(self) -> dict:
@@ -42,15 +44,15 @@ class PodbeanAuthenticator(OAuthAuthenticator):
     @property
     def auth_endpoint(self) -> str:
         url = urljoin(self.url_base, self.auth_type)
-        auth = f'{self.client_id}:{self.client_secret}@'
-        return url.replace('://', f'://{auth}')
+        auth = f"{self.client_id}:{self.client_secret}@"
+        return url.replace("://", f"://{auth}")
 
     @property
     def oauth_request_body(self) -> dict:
-        payload = {'grant_type': 'client_credentials'}
+        payload = {"grant_type": "client_credentials"}
 
         if self.podcast_id:
-            payload['podcast_id'] = self.podcast_id
+            payload["podcast_id"] = self.podcast_id
 
         return payload
 
@@ -59,14 +61,15 @@ class PodbeanAuthenticator(OAuthAuthenticator):
         if not self.is_token_valid():
             self.update_access_token()
 
-        return {'access_token': self.access_token}
+        return {"access_token": self.access_token}
 
 
 class PodbeanPartitionAuthenticator(PodbeanAuthenticator):
     """Authenticator with auth tokens for each podcast."""
+
     _tokens = None
 
-    auth_type = APIAuthType['multi'].value
+    auth_type = APIAuthType["multi"].value
 
     @property
     def auth_params(self) -> dict:
@@ -105,5 +108,5 @@ class PodbeanPartitionAuthenticator(PodbeanAuthenticator):
 
         # Podcast auth for partitioning
         self._tokens = {
-            p['podcast_id']: p['access_token'] for p in token_json['podcasts']
+            p["podcast_id"]: p["access_token"] for p in token_json["podcasts"]
         }
