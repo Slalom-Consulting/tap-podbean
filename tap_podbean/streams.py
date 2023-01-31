@@ -38,7 +38,7 @@ class PodcastsStream(PodbeanStream):
 
 
 class _BasePodcastPartitionStream(PodbeanStream):
-    """Base class for podcast partitions"""
+    """Base class for podcast partitions."""
 
     @property
     @cached
@@ -68,7 +68,7 @@ class EpisodesStream(_BasePodcastPartitionStream):
 
 
 class _BaseCSVStream(_BasePodcastPartitionStream):
-    """Base class for CSV report streams"""
+    """Base class for CSV report streams."""
 
     records_jsonpath = "$.download_urls"
     _csv_requests_session = None
@@ -121,7 +121,7 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
         return response
 
     def _csv_records(self, url: str, *args, **kwargs) -> Iterable(dict):
-        """Read CSV using SDK Error Handeling"""
+        """Read CSV using SDK Error Handeling."""
         response = self._csv_response(url, *args, **kwargs)
         decoded_file = (line.decode("utf-8-sig") for line in response.iter_lines())
         reader = csv.DictReader(decoded_file, delimiter=",")
@@ -136,7 +136,7 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
     @property
     def partitions(self) -> List[dict]:
         def _get_years(start_year) -> List[int]:
-            """List of years for CSV Reports"""
+            """List of years for CSV Reports."""
             current_year = datetime.utcnow().date().year
 
             if start_year < current_year:
@@ -149,7 +149,7 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
             return [current_year]
 
         def _json_str(podcast_id, year) -> str:
-            """Parameters for CSV Reports"""
+            """Parameters for CSV Reports."""
             part = {"podcast_id": podcast_id, "year": year}
 
             return json.dumps(part)
