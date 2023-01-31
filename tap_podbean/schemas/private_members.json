@@ -2,7 +2,7 @@
   "type": "object",
   "properties": {
     "email": {
-      "type": ["string", "null"]
+      "type": ["string"]
     },
     "create_time": {
       "type": ["number", "string", "null"]

@@ -2,7 +2,7 @@
   "type": "object",
   "properties": {
     "podcast_id": {
-      "type": ["string", "null"]
+      "type": ["string"]
     },
     "followers": {
       "type": ["integer", "null"]
