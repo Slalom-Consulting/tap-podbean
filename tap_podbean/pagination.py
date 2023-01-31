@@ -5,7 +5,6 @@ from typing import Any
 from requests import Response
 from singer_sdk.pagination import BaseOffsetPaginator
 
-
 PAGE_SIZE = 20
 PAGE_SIZE_MAX = 100
 

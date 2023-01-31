@@ -8,7 +8,6 @@ from singer_sdk.streams import RESTStream
 from tap_podbean.auth import PodbeanAuthenticator
 from tap_podbean.pagination import PodbeanPaginator
 
-
 PAGINATION_INDEX = 0
 API_URL = "https://api.podbean.com"
 

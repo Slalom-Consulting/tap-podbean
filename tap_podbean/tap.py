@@ -36,7 +36,9 @@ class TapPodbean(Tap):
             "client_id",
             th.StringType,
             required=True,
-            description="The client identifier to authenticate against the API service."
+            description=(
+                "The client identifier to authenticate against the API service."
+            ),
         ),
         th.Property(
             "client_secret",
