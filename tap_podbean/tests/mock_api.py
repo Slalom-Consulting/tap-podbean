@@ -1,28 +1,10 @@
 """Mock API."""
-# import datetime
+
 import json
 
 import requests_mock
 
-# from singer_sdk.testing import get_standard_tap_tests
-
-# from tap_podbean.tap import TapPodbean
-
 API_URL = "https://api.podbean.com"
-
-# SAMPLE_CONFIG = {
-#     "client_id": "SampleClientId",
-#     "client_secret": "SampleClientSecret",
-#     "start_date": datetime.datetime.now(datetime.timezone.utc).strftime(
-#         "%Y-%m-%dT%H:%M:%S"
-#     ),
-# }
-#
-# test = [
-#     test
-#     for test in get_standard_tap_tests(TapPodbean, config=SAMPLE_CONFIG)
-#     if test.__name__ in ("_test_stream_connections")
-# ][0]
 
 mock_responses_path = "tap_podbean/tests/mock_responses"
 
