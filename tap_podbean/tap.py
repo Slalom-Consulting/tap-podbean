@@ -7,7 +7,6 @@ from singer_sdk import typing as th
 
 from tap_podbean.streams import (
     EpisodesStream,
-    NetworkAnalyticReportsStream,
     PodcastAnalyticReportsStream,
     PodcastDownloadReportsStream,
     PodcastEngagementReportsStream,
@@ -21,7 +20,6 @@ STREAM_TYPES = [
     EpisodesStream,
     PodcastDownloadReportsStream,
     PodcastEngagementReportsStream,
-    NetworkAnalyticReportsStream,
     PodcastAnalyticReportsStream,
 ]
 

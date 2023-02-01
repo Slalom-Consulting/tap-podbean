@@ -230,23 +230,6 @@ class PodcastEngagementReportsStream(_BaseCSVStream):
     schema_filepath = SCHEMAS_DIR.joinpath("csv_reports.json")
 
 
-class NetworkAnalyticReportsStream(PodbeanStream):
-    primary_keys = ["podcast_id"]
-    name = "network_analytic_reports"
-    path = "/v1/analytics/podcastAnalyticReports"
-    replication_key = None
-    schema_filepath = SCHEMAS_DIR.joinpath("analytics_reports.json")
-
-    def get_url_params(
-        self, context: Optional[dict], next_page_token: Optional[dict]
-    ) -> dict:
-        return {"types[]": ANALYTIC_REPORT_TYPES}
-
-    def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
-        # Add Podcast ID to record
-        return {"podcast_id": "network", **row}
-
-
 class PodcastAnalyticReportsStream(_BasePodcastPartitionStream):
     primary_keys = ["podcast_id"]
     name = "podcast_analytic_reports"
