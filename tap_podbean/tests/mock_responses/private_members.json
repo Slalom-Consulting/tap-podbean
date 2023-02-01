@@ -1,0 +1,11 @@
+{
+  "limit": 1,
+  "offset": 0,
+  "count": 1,
+  "private_members": [
+    {
+      "email": "sample@email.id"
+    }
+  ],
+	"has_more": false
+}
