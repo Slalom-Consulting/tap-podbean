@@ -90,7 +90,9 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
         response_date_format = "%a, %d %b %Y %H:%M:%S %Z"
         return datetime.strptime(val, response_date_format)
 
-    def _csv_response(self, url: str, *args, **kwargs) -> requests.Response:
+    def _csv_response(
+        self, url: str, json_path: Optional[str] = None
+    ) -> requests.Response:
         request = requests.Request("GET", url=url)
         prepared_request = self.csv_requests_session.prepare_request(request)
         decorated_request = self.request_decorator(self._csv_request)
@@ -101,8 +103,6 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
 
         # if last_modified_at < self.start_date:
         #     return None
-
-        url_key_path = kwargs.get("url_key_path")
 
         parent_partition = json.loads(
             self.stream_state["partitions"][0]["context"]["partition"]
@@ -115,7 +115,7 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
                 "podcast_id": parent_partition.get("podcast_id"),
                 "year": parent_partition.get("year"),
                 "csv_stream": True,
-                "record_json_path": f"{self.records_jsonpath}.{url_key_path}",
+                "record_json_path": f"{self.records_jsonpath}.{json_path}",
             },
             extra_tags={"url": url} if self._LOG_REQUEST_METRIC_URLS else None,
         )
@@ -196,14 +196,14 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
                     continue
 
                 file_key = f"{month}_{i}"
-
-                for csv_record, csv_record_num, csv_response in self._csv_records(url):
-                    last_modified = csv_response.headers.get("Last-Modified")
+                json_path = f"{month}_[{i}]"
+                for record, record_key, csv_resp in self._csv_records(url, json_path):
+                    last_modified = csv_resp.headers.get("Last-Modified")
 
                     yield {
                         "file_key": file_key,
-                        "record_key": csv_record_num,
-                        "record_val": csv_record,
+                        "record_key": record_key,
+                        "record_val": record,
                         "file_last_modified_at": last_modified,
                     }
 
