@@ -8,7 +8,7 @@
       "type": ["string"]
     },
     "record_key": {
-      "type": ["string"]
+      "type": ["integer"]
     },
     "record_val": {
       "type": ["string"]
