@@ -8,7 +8,6 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 from urllib.parse import urlsplit
 
 import requests
-
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 
 from tap_podbean.auth import PodbeanPartitionAuthenticator
