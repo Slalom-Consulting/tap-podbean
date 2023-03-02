@@ -9,7 +9,6 @@ from urllib.parse import urlsplit
 
 import requests
 
-# from memoization import cached
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 
 from tap_podbean.auth import PodbeanPartitionAuthenticator
@@ -41,7 +40,6 @@ class _BasePodcastPartitionStream(PodbeanStream):
     """Base class for podcast partitions."""
 
     @property
-    # @cached
     def authenticator(self) -> PodbeanPartitionAuthenticator:
         return PodbeanPartitionAuthenticator(self)
 
@@ -75,8 +73,6 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
 
     @property
     def csv_requests_session(self) -> requests.Session:
-        # if not self._csv_requests_session:
-        #    self._csv_requests_session = requests.Session()
         return self._csv_requests_session
 
     def _csv_request(self, prepared_request) -> requests.Response:
@@ -97,12 +93,6 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
         prepared_request = self.csv_requests_session.prepare_request(request)
         decorated_request = self.request_decorator(self._csv_request)
         response: requests.Response = decorated_request(prepared_request)
-        # last_modified_at = self._csv_timstamp(
-        #   str(response.headers.get("Last-Modified"))
-        # )
-
-        # if last_modified_at < self.start_date:
-        #     return None
 
         parent_partition = json.loads(
             self.stream_state["partitions"][0]["context"]["partition"]
