@@ -1,0 +1,11 @@
+{
+  "access_token": "SampleAccessToken",
+  "expires_in": 604800,
+  "podcasts": [
+    {
+      "access_token": "SamplePodcastAccessToken",
+      "expires_in": 604800,
+      "podcast_id": "SamplePodcastId"
+    }
+  ]
+}
