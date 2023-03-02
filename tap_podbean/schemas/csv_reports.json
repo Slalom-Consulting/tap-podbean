@@ -10,7 +10,7 @@
     "record_key": {
       "type": ["integer"]
     },
-    "record_val": {
+    "record_value": {
       "type": ["string"]
     },
     "file_last_modified_at": {

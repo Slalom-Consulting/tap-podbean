@@ -193,7 +193,7 @@ class _BaseCSVStream(_BasePodcastPartitionStream):
                     yield {
                         "file_key": file_key,
                         "record_key": record_key,
-                        "record_val": json.dumps(record),
+                        "record_value": json.dumps(record),
                         "file_last_modified_at": last_modified,
                     }
 
