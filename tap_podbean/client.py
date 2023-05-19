@@ -7,9 +7,8 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 from urllib.parse import urlsplit
 
 import requests
+from memoization import cached
 from singer_sdk.helpers.jsonpath import extract_jsonpath
-
-# from memoization import cached
 from singer_sdk.streams import RESTStream
 
 from tap_podbean.auth import PodbeanAuthenticator, PodbeanPartitionAuthenticator
@@ -22,14 +21,21 @@ API_URL = "https://api.podbean.com"
 class PodbeanStream(RESTStream):
     """Podbean stream class."""
 
+    auth_type = "default"
+
     @property
     def url_base(self) -> str:
         return self.config.get("api_url", API_URL)
 
     @property
-    # @cached
     def authenticator(self) -> PodbeanAuthenticator:
-        return PodbeanAuthenticator(self)
+        @cached  # type: ignore[override]
+        def _auth(self: RESTStream, auth_type: str = "default"):
+            if auth_type == "multi":
+                return PodbeanPartitionAuthenticator(self)
+            return PodbeanAuthenticator(self)
+
+        return _auth(self, self.auth_type)
 
     def get_new_paginator(self) -> PodbeanPaginator:
         limit = self.config.get("limit")
@@ -48,9 +54,7 @@ class PodbeanStream(RESTStream):
 class PodbeanPartitionStream(PodbeanStream):
     """Base class for podcast partitions."""
 
-    @property
-    def authenticator(self) -> PodbeanPartitionAuthenticator:
-        return PodbeanPartitionAuthenticator(self)
+    auth_type = "multi"
 
 
 class PodbeanCSVStream(PodbeanPartitionStream):
