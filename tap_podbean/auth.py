@@ -10,7 +10,7 @@ from singer_sdk.helpers._util import utc_now
 from singer_sdk.streams import RESTStream
 
 
-class APIAuthType(str, Enum):
+class APIAuthEndpoint(str, Enum):
     default = "/v1/oauth/token"
     multi = "/v1/oauth/multiplePodcastsToken"
 
@@ -38,7 +38,16 @@ class PodbeanAuthenticator(OAuthAuthenticator):
         self.url_base = stream.url_base
         self.podcast_id = podcast_id
 
-    auth_type = APIAuthType["default"].value
+    auth_type_endpoint = APIAuthEndpoint["default"].value
+    _tokens: dict = {}
+
+    @property
+    def tokens(self) -> dict:
+        """Update and store a dict of auth tokens for each podcast."""
+        if not self.is_token_valid():
+            self.update_access_token()
+
+        return self._tokens
 
     @property
     def auth_headers(self) -> dict:
@@ -46,7 +55,7 @@ class PodbeanAuthenticator(OAuthAuthenticator):
 
     @property
     def auth_endpoint(self) -> str:
-        url = urljoin(self.url_base, self.auth_type)
+        url = urljoin(self.url_base, self.auth_type_endpoint)
         auth = f"{self.client_id}:{self.client_secret}@"
         return url.replace("://", f"://{auth}")
 
@@ -70,21 +79,11 @@ class PodbeanAuthenticator(OAuthAuthenticator):
 class PodbeanPartitionAuthenticator(PodbeanAuthenticator):
     """Authenticator with auth tokens for each podcast."""
 
-    _tokens: dict = {}
-
-    auth_type = APIAuthType["multi"].value
+    auth_type_endpoint = APIAuthEndpoint["multi"].value
 
     @property
     def auth_params(self) -> dict:
         return {}  # Handled by Stream. Overrides parent class
-
-    @property
-    def tokens(self) -> dict:
-        """Update and store a dict of auth tokens for each podcast."""
-        if not self.is_token_valid():
-            self.update_access_token()
-
-        return self._tokens
 
     def update_access_token(self) -> None:
         # Cloned from parent class
