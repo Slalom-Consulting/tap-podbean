@@ -30,7 +30,7 @@ Install from GitHub:
 pipx install git+https://github.com/Slalom-Consulting/tap-podbean.git@main
 ```
 
-# Capabilities
+## Capabilities
 
 * `catalog`
 * `state`
@@ -49,7 +49,7 @@ Developer TODO: Provide a list of config options accepted by the tap.
 This section can be created by copy-pasting the CLI output from:
 
 ```
-tap-podbean-umapi --about --format=markdown
+tap-podbean --about --format=markdown
 ```
 -->
 
