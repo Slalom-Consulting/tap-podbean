@@ -24,6 +24,21 @@ pipx install git+https://github.com/ORG_NAME/tap-podbean.git@main
 
 -->
 
+Install from GitHub:
+
+```bash
+pipx install git+https://github.com/Slalom-Consulting/tap-podbean.git@main
+```
+
+# Capabilities
+
+* `catalog`
+* `state`
+* `discover`
+* `about`
+* `stream-maps`
+* `schema-flattening`
+
 ## Configuration
 
 ### Accepted Config Options
@@ -34,24 +49,9 @@ Developer TODO: Provide a list of config options accepted by the tap.
 This section can be created by copy-pasting the CLI output from:
 
 ```
-tap-podbean --about --format=markdown
+tap-podbean-umapi --about --format=markdown
 ```
 -->
-
-Podbean tap class.
-
-Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Targets.
-
-## Capabilities
-
-* `catalog`
-* `state`
-* `discover`
-* `about`
-* `stream-maps`
-* `schema-flattening`
-
-## Settings
 
 | Setting             | Required | Default | Description |
 |:--------------------|:--------:|:-------:|:------------|
